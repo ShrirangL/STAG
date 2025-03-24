@@ -4,10 +4,35 @@ import java.util.HashSet;
 
 public class GamePlayer extends GameEntity {
     protected HashSet<GameArtefact> artefacts;
+    private int health;
 
     public GamePlayer(String name, String description, String location) {
         super(name, description, location);
         artefacts = new HashSet<>();
+        health = 3;
+    }
+
+    public Integer getHealth() {
+        return health;
+    }
+
+    public void incrementHealth() {
+        if(health < 3) {
+            health++;
+        }
+    }
+
+    public void decrementHealth() {
+        if(health > 0) {
+            health--;
+        }
+    }
+
+    public void checkHealthAndRespawn(String location) {
+        if(health < 1) {
+            health = 3;
+        }
+        setLocation(location);
     }
 
     public void addItem(GameArtefact item) {
@@ -21,6 +46,10 @@ public class GamePlayer extends GameEntity {
                 break;
             }
         }
+    }
+
+    public void removeAllArtefacts() {
+        artefacts.clear();
     }
 
     public HashSet<String> getArtefactNames() {

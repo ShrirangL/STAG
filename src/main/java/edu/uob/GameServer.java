@@ -349,14 +349,13 @@ public final class GameServer {
 
         //See if the query is valid
         //for a custom action we need a trigger and it least one of the subjects.
-        // If we have more or less than one trigger we throw exception.
+        // If we have trigers from more than one action we throw exception.
         //if we have zero or more than its subjects we throw error. A trigger can
         // be associated with more than one game action so If we have a trigger but
         // subjects are not from exactly one action we throw error.
         // In the end we should have one trigger and subjects should not be empty, and they should all be from one action.
         HashSet<String> availableTriggers = new HashSet<>(gameActions.keySet());
         HashSet<String> commandTriggers = new HashSet<>();
-        HashSet<String> commandSubjects = new HashSet<>();
 
         for(String word : wordList) {
             if(availableTriggers.contains(word)) {
@@ -364,41 +363,68 @@ public final class GameServer {
             }
         }
 
-        if(commandTriggers.size() != 1) {
-            throw new RuntimeException("There should be exactly one trigger in the command");
+        GameAction commandAction  = null; // Action to be performed
+        // if command triggers is empty throw error
+        if(commandTriggers.isEmpty()) {
+            throw new RuntimeException("No command triggers in action " + command);
         }
-
-        String trigger = commandTriggers.iterator().next();
-
-        // for all the actions associated with this command
-        HashSet<GameAction>actions = gameActions.get(trigger);
-
-        HashSet<HashSet<String>> subjects = new HashSet<HashSet<String>>();
-        //keep iterating through all the actions and when a subject from an action is found
-        // there should be no other subject from a different action
-        for(GameAction action : actions) {
-            // compile a list of subjects for this action
-            HashSet<String> foundSubjects = new HashSet<>();
-            Iterator<String> itr = action.getSubjects().iterator();
-            while(itr.hasNext()) {
-                String subject = itr.next();
+        else if(commandTriggers.size() > 1) {
+            // all triggers should have one common action
+            Iterator<String> iterator = commandTriggers.iterator();
+            HashSet<GameAction> commonActions = gameActions.get(iterator.next());
+            while(iterator.hasNext()) {
+                commonActions.retainAll(gameActions.get(iterator.next()));
+            }
+            if(commonActions.size() != 1) {
+                throw new RuntimeException("Triggers from different actions are not supported");
+            }
+            commandAction = commonActions.iterator().next();
+            // We should have at least one of the subjects of the common action
+            HashSet<String> subjects = commandAction.getSubjects();
+            boolean found = false;
+            for(String subject : subjects) {
                 if(wordList.contains(subject)) {
-                    foundSubjects.add(subject);
+                    found = true;
+                    break;
                 }
             }
-            if(foundSubjects.size() > 1){
-                subjects.add(foundSubjects);
+            if(!found) {
+                throw new RuntimeException("Required subjects for given trigger(s) not found");
+            }
+        }
+        else {
+            HashSet<HashSet<String>> subjects = new HashSet<HashSet<String>>();
+            HashSet<GameAction> actions = gameActions.get(commandTriggers.iterator().next());
+            //keep iterating through all the actions and when a subject from an action is found
+            // there should be no other subject from a different action
+            boolean first = true;
+            for(GameAction action : actions) {
+                // compile a list of subjects for this action
+                HashSet<String> foundSubjects = new HashSet<>();
+                Iterator<String> itr = action.getSubjects().iterator();
+                while(itr.hasNext()) {
+                    String subject = itr.next();
+                    if(wordList.contains(subject)) {
+                        foundSubjects.add(subject);
+                    }
+                }
+                if(foundSubjects.size() > 1){
+                    subjects.add(foundSubjects);
+                    if(first){
+                        commandAction = action;
+                        first = false;
+                    }
+                }
+            }
+
+            // We should have only one entry in subjects for a query to be valid else throw error
+            if(subjects.size() != 1) {
+                throw new RuntimeException("All triggers the subjects should be from exactly one action");
             }
         }
 
-        // We should have only one entry in subjects for a query to be valid else throw error
-        if(subjects.size() != 1) {
-            throw new RuntimeException("All the subjects should be from exactly one action");
-        }
-
-        commandSubjects = subjects.iterator().next();
-        if(commandSubjects == null || commandSubjects.isEmpty()) {
-            throw new RuntimeException("Valid subjects for trigger :'" + trigger + "' are missing.");
+        if(commandAction == null) {
+            throw new RuntimeException("No valid action found in command ");
         }
 
         //See if we can act on valid query
@@ -408,10 +434,10 @@ public final class GameServer {
         HashSet<String> availableEntities = new HashSet<>();
         availableEntities.addAll(gamePlayer.getArtefactNames());
         availableEntities.addAll(gameLocation.getEntityNames());
-        availableEntities.addAll(gameLocations.keySet());
+        availableEntities.addAll(gamePaths.get(gamePlayer.getLocation()));
         availableEntities.remove("storeroom");
 
-        for(String subject: commandSubjects) {
+        for(String subject: commandAction.getSubjects()) {
             if(!availableEntities.contains(subject)) {
                 throw new RuntimeException("Artefact :'" + subject + "' is not in available to player");
             }
@@ -419,15 +445,26 @@ public final class GameServer {
 
         //Act on the query/command
         //Delete the consumed item from where it was located (either player's inventory or room)
-        GameAction commandAction = actions.iterator().next();
         HashSet<String> consumed = commandAction.getConsumed();
         HashSet<String> produced = commandAction.getProduced();
         for(String item : consumed) {
-            // see if the item is present in player's inventory or current location and remove it from there
-            if(gamePlayer.isArtefactPresent(item)) {
+            if(item.equalsIgnoreCase("health")) {
+                gamePlayer.decrementHealth();
+                if(gamePlayer.getHealth() == 0){
+                    // drop everything
+                    gameLocation.getArtefacts().addAll(gamePlayer.getArtefacts());
+                    gamePlayer.removeAllArtefacts();
+                    //respawn
+                    gamePlayer.checkHealthAndRespawn(playersStartLocation);
+                }
+            }
+            // see if the item is present in player's inventory
+            else if(gamePlayer.isArtefactPresent(item)) {
                 gameLocations.get("storeroom").addArtefact(gamePlayer.getArtefact(item));
                 gamePlayer.removeArtefact(item);
-            }else if(gameLocation.isEntityPresent(item)) {
+            }
+            // or current location and remove it from there
+            else if(gameLocation.isEntityPresent(item)) {
                 gameLocations.get("storeroom").addEntity(gameLocation.getEntity(item));
                 gameLocation.removeEntity(item);
             } else if (gameLocations.containsKey(item)) {
@@ -437,6 +474,7 @@ public final class GameServer {
                 while (iterator.hasNext()) {
                     if (iterator.next().equalsIgnoreCase(item)) {
                         iterator.remove();
+                        break;
                     }
                 }
             }
@@ -444,11 +482,13 @@ public final class GameServer {
 
         // produced item is moved from store room to current location
         for(String item : produced) {
+            if(item.equalsIgnoreCase("health")) {
+                gamePlayer.incrementHealth();
+            }
             // see if produced item is present in storeroom. If present move to player's current location.
-            GameLocation storeRoom = gameLocations.get("storeroom");
-            if(storeRoom.isEntityPresent(item)){
-                gameLocation.addEntity(storeRoom.getEntity(item));
-                storeRoom.removeEntity(item);
+            else if(gameLocations.get("storeroom").isEntityPresent(item)){
+                gameLocation.addEntity( gameLocations.get("storeroom").getEntity(item));
+                gameLocations.get("storeroom").removeEntity(item);
             }
             // If it is not in storeroom then the item is location
             else if(gameLocations.containsKey(item)){
