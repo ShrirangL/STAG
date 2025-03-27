@@ -36,6 +36,7 @@ public class GamePlayer extends GameEntity {
     }
 
     public void addItem(GameArtefact item) {
+        item.setLocation(name);
         artefacts.add(item);
     }
 

@@ -116,8 +116,8 @@ public final class GameServer {
         while (locations.hasNext()) {
             Graph location = locations.next();
             Node locationDetails = location.getNodes(false).get(0);
-            String locationName = locationDetails.getId().getId();
-            String locationDescription = locationDetails.getAttribute("description");
+            String locationName = locationDetails.getId().getId().toLowerCase();
+            String locationDescription = locationDetails.getAttribute("description").toLowerCase();
 
             if(first){
                 playersStartLocation = locationName;
@@ -130,12 +130,12 @@ public final class GameServer {
             // Iterate through all the entity categories inside a location
             while (entities.hasNext()) {
                 Graph entity = entities.next();
-                String graphName = entity.getId().getId();
+                String graphName = entity.getId().getId().toLowerCase();
                 Iterator<Node> items = entity.getNodes(false).iterator();
                 while (items.hasNext()) {
                     Node item = items.next();
-                    String itemName = item.getId().getId();
-                    String itemDescription = item.getAttribute("description");
+                    String itemName = item.getId().getId().toLowerCase();
+                    String itemDescription = item.getAttribute("description").toLowerCase();
                     switch (graphName){
                         case "characters":
                             gameLocation.addCharacter(new GameCharacter(itemName, itemDescription, locationName, -1));
@@ -154,7 +154,7 @@ public final class GameServer {
 
         // check if storeroom was found, if not create an empty location named storeroom
         if(!gameLocations.containsKey("storeroom")){
-            gameLocations.put("storeroom", new GameLocation("storeroom", "Storage for any entities not placed in the game"));
+            gameLocations.put("storeroom", new GameLocation("storeroom", "storage for any entities not placed in the game"));
         }
 
         Iterator<Edge>paths = sections.next().getEdges().iterator();
@@ -162,9 +162,9 @@ public final class GameServer {
         while (paths.hasNext()) {
             Edge path = paths.next();
             Node fromLocation = path.getSource().getNode();
-            String fromName = fromLocation.getId().getId();
+            String fromName = fromLocation.getId().getId().toLowerCase();
             Node toLocation = path.getTarget().getNode();
-            String toName = toLocation.getId().getId();
+            String toName = toLocation.getId().getId().toLowerCase();
             gamePaths.putIfAbsent(fromName, new HashSet<>());
             gamePaths.get(fromName).add(toName);
         }
@@ -184,7 +184,7 @@ public final class GameServer {
             for (int j = 0; j < triggers.getLength(); j++) {
                 NodeList keyphrases = ((Element)triggers.item(j)).getElementsByTagName("keyphrase");
                 for(int k = 0; k < keyphrases.getLength(); k++) {
-                    gameAction.addTrigger(keyphrases.item(k).getTextContent());
+                    gameAction.addTrigger(keyphrases.item(k).getTextContent().toLowerCase());
                 }
             }
 
@@ -193,7 +193,7 @@ public final class GameServer {
             for (int j = 0; j < subjects.getLength(); j++) {
                 NodeList subjectEntities = ((Element)subjects.item(j)).getElementsByTagName("entity");
                 for(int k = 0; k < subjectEntities.getLength(); k++) {
-                    gameAction.addSubject(subjectEntities.item(k).getTextContent());
+                    gameAction.addSubject(subjectEntities.item(k).getTextContent().toLowerCase());
                 }
             }
 
@@ -202,7 +202,7 @@ public final class GameServer {
             for (int j = 0; j < consumed.getLength(); j++) {
                 NodeList consumedEntities = ((Element)consumed.item(j)).getElementsByTagName("entity");
                 for(int k = 0; k < consumedEntities.getLength(); k++) {
-                    gameAction.addConsumed(consumedEntities.item(k).getTextContent());
+                    gameAction.addConsumed(consumedEntities.item(k).getTextContent().toLowerCase());
                 }
             }
 
@@ -211,7 +211,7 @@ public final class GameServer {
             for (int j = 0; j < produced.getLength(); j++) {
                 NodeList producedEntities = ((Element)produced.item(j)).getElementsByTagName("entity");
                 for(int k = 0; k < producedEntities.getLength(); k++) {
-                    gameAction.addProduced(producedEntities.item(k).getTextContent());
+                    gameAction.addProduced(producedEntities.item(k).getTextContent().toLowerCase());
                 }
             }
 
@@ -230,12 +230,13 @@ public final class GameServer {
     * @param command The incoming command to be processed
     */
     public String handleCommand(String command) {
+        command = command.toLowerCase();
         // TODO implement your server logic here
         // Handle standard built in commands first;
         // find ":" in the incoming string. anything to its left is username
         try {
             Iterator<String> iterator = Arrays.stream(command.split(":")).iterator();
-            String name = iterator.next();
+            String name = iterator.next().trim();
             String regex = "^[A-Za-z '-]+$";
             Pattern pattern = Pattern.compile(regex);
             Matcher matcher = pattern.matcher(name);
@@ -279,9 +280,9 @@ public final class GameServer {
             Matcher matcher = pattern.matcher(command);
 
             while (matcher.find()) {
+                words.add(triggerOrSubject);
                 command.delete(matcher.start(), matcher.end());
                 matcher = pattern.matcher(command);
-                words.add(triggerOrSubject);
             }
         }
 
@@ -464,15 +465,19 @@ public final class GameServer {
             throw new RuntimeException("Multiple triggers not allowed in goto command");
         }
 
-        if(!doesCommandContainSubject(words).isEmpty()) {
-            throw new RuntimeException("Goto command requires does not require subjects");
+        String subject = this.doesCommandContainSubject(words);
+        if(subject.isEmpty()) {
+            throw new RuntimeException("Goto command requires a subjects");
+        }
+        if(this.doesCommandContainSubjectsExcept(words, subject)) {
+            throw new RuntimeException("Multiple subjects not allowed in goto command");
         }
 
         String newLocation = this.doesCommandContainLocation(words);
         if(newLocation.isEmpty()) {
             throw new RuntimeException("Goto command requires a destination location");
         }
-        if(doesCommandContainLocationExcept(words, newLocation)) {
+        if(this.doesCommandContainLocationExcept(words, newLocation)) {
             throw new RuntimeException("Multiple locations not allowed in goto command");
         }
 
