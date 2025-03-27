@@ -84,7 +84,7 @@ public class GamePlayer extends GameEntity {
 
     public String showInventory() {
         StringBuilder stringBuilder = new StringBuilder();
-        stringBuilder.append("The player has \n");
+        stringBuilder.append("The player has:\n");
         for (GameArtefact item : artefacts) {
             stringBuilder.append(item.getName()).append("\n");
         }

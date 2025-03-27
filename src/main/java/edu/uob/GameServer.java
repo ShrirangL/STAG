@@ -29,11 +29,45 @@ public final class GameServer {
     private HashMap<String, GameLocation> gameLocations;
     private String playersStartLocation = "";
 
+    private final HashSet<String> builtInTriggers = new HashSet<>(Set.of("inventory", "inv", "get", "drop", "goto", "look", "health"));
+    private HashSet<String> availableTriggers;
+    private HashSet<GameAction> availableActions;
+    private HashSet<String> availableSubjects;
+
+    // compute a list of action triggers
+    private void computeAvailableTriggers() {
+        availableTriggers.addAll(builtInTriggers);
+        availableTriggers.addAll(gameActions.keySet());
+    }
+
+    // compute a list of all game actions
+    private void computeAvailableActions() {
+        for(String key : gameActions.keySet()) {
+            availableActions.addAll(gameActions.get(key));
+        }
+    }
+
+    // make a list of all the subjects
+    private void computeAvailableSubjects(){
+        // action can be performed on artefacts, characters, furniture and location
+        for (GameLocation location : gameLocations.values()) {
+            availableSubjects.add(location.getLocationName());
+            availableSubjects.addAll(location.getArtefactNames());
+            availableSubjects.addAll(location.getCharacterNames());
+            availableSubjects.addAll(location.getFurnitureNames());
+        }
+    }
+
     private static final char END_OF_TRANSMISSION = 4;
 
     public static void main(String[] args) throws IOException {
-        File entitiesFile = Paths.get("config" + File.separator + "basic-entities.dot").toAbsolutePath().toFile();
-        File actionsFile = Paths.get("config" + File.separator + "basic-actions.xml").toAbsolutePath().toFile();
+        StringBuilder entitiesFilePath = new StringBuilder();
+        StringBuilder actionsFilePath = new StringBuilder();
+        entitiesFilePath.append("config").append(File.separator).append("basic-entities.dot");
+        actionsFilePath.append("config").append(File.separator).append("basic-actions.xml");
+
+        File entitiesFile = Paths.get(entitiesFilePath.toString()).toAbsolutePath().toFile();
+        File actionsFile = Paths.get(actionsFilePath.toString()).toAbsolutePath().toFile();
         GameServer server = new GameServer(entitiesFile, actionsFile);
         server.blockingListenOn(8888);
     }
@@ -51,15 +85,21 @@ public final class GameServer {
         gamePaths = new HashMap<>();
         gamePlayers = new HashMap<>();
         gameLocations = new HashMap<>();
+
+        availableTriggers = new HashSet<>();
+        availableActions = new HashSet<>();
+        availableSubjects = new HashSet<>();
         // read entities file
         try {
             this.parseEntitiesFile(entitiesFile);
             this.parseActionsFile(actionsFile);
+            this.computeAvailableTriggers();
+            this.computeAvailableActions();
+            this.computeAvailableSubjects();
         }
         catch (Exception e) {
             e.getStackTrace();
         }
-        return;
     }
 
     private void parseEntitiesFile(File entitiesFile) throws IOException, ParseException {
@@ -72,7 +112,7 @@ public final class GameServer {
 
         Iterator<Graph>locations = sections.next().getSubgraphs().iterator();
         //Iterate through all the locations
-        Boolean first = true;
+        boolean first = true;
         while (locations.hasNext()) {
             Graph location = locations.next();
             Node locationDetails = location.getNodes(false).get(0);
@@ -200,161 +240,316 @@ public final class GameServer {
             Pattern pattern = Pattern.compile(regex);
             Matcher matcher = pattern.matcher(name);
             if (!matcher.matches()) {
-                throw new RuntimeException("Name '" + name + "' must consist only of letters, spaces, apostrophes and hyphens");
+                throw new RuntimeException("Name must consist only of letters, spaces, apostrophes and hyphens");
             }
 
             if(!gamePlayers.containsKey(name)) {
                 gamePlayers.put(name, new GamePlayer(name, "", playersStartLocation));
+                gameLocations.get(playersStartLocation).addPlayer(name);
             }
 
             String action = iterator.next();
             return this.parseAction(gamePlayers.get(name), action);
         }
         catch (Exception e){
-            return e.getMessage();
+            StringBuilder error = new StringBuilder();
+            error.append("[ERROR]: ").append(e.getMessage());
+            return error.toString();
         }
     }
 
-    private String parseAction(GamePlayer gamePlayer, String action) {
-        action = action.toLowerCase();
-        LinkedList<String> words = new LinkedList<>(Arrays.stream(action.split(" ")).toList());
-        if(words.isEmpty()) {
-            throw new RuntimeException("No action found");
-        }
+    private String parseAction(GamePlayer gamePlayer, String input) {
         GameLocation gameLocation = gameLocations.get(gamePlayer.getLocation());
-        if(gameLocation == null) {
-            throw new RuntimeException("Location " + gamePlayer.getLocation() + " not found");
+        if (gameLocation == null) {
+            throw new RuntimeException("Invalid player location");
         }
-        HashSet<String> availableTriggers = new HashSet<>(Arrays.asList("inventory", "inv", "get", "drop", "goto", "look"));
-        availableTriggers.addAll(gameActions.keySet());
-        HashSet<String> foundTriggers = new HashSet<>();
-        for(String trigger : availableTriggers) {
-            if(words.contains(trigger)) {
-                foundTriggers.add(trigger);
+        StringBuilder command = new StringBuilder(input.toLowerCase());
+
+        // Keep iterating through the input string and check if a trigger or subject has matches in the input
+        LinkedList<String> words = new LinkedList<String>();
+
+        HashSet<String> triggersAndSubjects = new HashSet<>();
+        triggersAndSubjects.addAll(availableTriggers);
+        triggersAndSubjects.addAll(availableSubjects);
+        for(String triggerOrSubject : triggersAndSubjects){
+            StringBuilder patternString = new StringBuilder();
+            patternString.append("\\b").append(triggerOrSubject).append("\\b");
+
+            Pattern pattern = Pattern.compile(patternString.toString(), Pattern.CASE_INSENSITIVE);
+            Matcher matcher = pattern.matcher(command);
+
+            while (matcher.find()) {
+                command.delete(matcher.start(), matcher.end());
+                matcher = pattern.matcher(command);
+                words.add(triggerOrSubject);
             }
         }
 
-        //If we have more than one trigger throw exception
-        if(foundTriggers.size() != 1) {
-            throw new RuntimeException("Ensure that there is exactly one valid trigger");
+        if (words.isEmpty()) {
+            throw new RuntimeException("No action found");
         }
 
-        HashSet<String> items = new HashSet<>();
-        switch(foundTriggers.iterator().next()) {
-            // first check if the incoming command contains the built-in actions
-            case "inventory":
+        // Only words which are either triggers or subjects or locations should remain
+        Iterator<String> iterator = words.iterator();
+        while (iterator.hasNext()) {
+            String word = iterator.next();
+            if (!(availableTriggers.contains(word) || availableSubjects.contains(word) || gameLocations.containsKey(word))) {
+                iterator.remove();
+            }
+        }
+
+        //If we have no trigger and subjects we can't do anything
+        if (words.isEmpty()) {
+            throw new RuntimeException("Ensure that there is valid trigger and subject in ");
+        }
+
+        String trigger = this.doesCommmandContainTrigger(words);
+
+        switch (trigger) {
             case "inv":
-                return gamePlayer.showInventory();
+            case "inventory":
+                return this.parseActionInventory(gamePlayer, words);
             case "get":
-                // get all the words from action and check all the words except get in the current location.
-                for (String word : words) {
-                    // is the current word present in current location of player
-                    if (!word.equalsIgnoreCase("get") && gameLocation.isArtefactPresent(word)) {
-                        items.add(word);
-                    }
-                }
-
-                // if more or less than one item is being picked throw error
-                if (items.isEmpty()) {
-                    throw new RuntimeException("Artefact in action get cannot be found or could not be picked up.");
-                } else if (items.size() > 1) {
-                    throw new RuntimeException("Multiple artefacts cannot be picked in a single action.");
-                }
-
-                // insert the item into player's inventory
-                String item = items.iterator().next();
-                gamePlayer.addItem(gameLocation.getArtefact(item));
-                // Remove the item from the location
-                gameLocation.removeArtefact(item);
-                break;
+                return this.parseActionGet(gamePlayer, words);
             case "drop":
-                // get all the words from action and check all the words except drop in the player's inventory
-                for (String word : words) {
-                    if (!word.equalsIgnoreCase("drop") && gamePlayer.isArtefactPresent(word)) {
-                        items.add(word);
-                    }
-                }
-                // if more or less than one item is being picked throw error
-                if (items.isEmpty()) {
-                    throw new RuntimeException("No items in action " + action);
-                } else if (items.size() > 1) {
-                    throw new RuntimeException("Too many items in action " + action);
-                }
-
-                // add  it in the current location
-                String artefact = items.iterator().next();
-                gameLocation.addArtefact(gamePlayer.getArtefact(artefact));
-                // Remove the item from player
-                gamePlayer.removeArtefact(artefact);
-                break;
-
+                return this.parseActionDrop(gamePlayer, words);
             case "goto":
-                // check if there is a single valid destination
-                HashSet<String> destinations = new HashSet<>();
-                for (String word : words) {
-                    if (!word.equalsIgnoreCase("goto") && gameLocations.containsKey(word)) {
-                        destinations.add(word);
-                    }
-                }
-                // if more or less than one destination throw error
-                if (destinations.isEmpty()) {
-                    throw new RuntimeException("No destination in action " + action);
-                } else if (destinations.size() > 1) {
-                    throw new RuntimeException("Too many destinations in action " + action);
-                }
-
-                String destination = destinations.iterator().next();
-
-                // see if there is a path from current location to the destination
-                // get all the paths from current location
-                HashSet<String> paths = gamePaths.get(gamePlayer.getLocation());
-                // see if destination is one of them
-                for (String path : paths) {
-                    if (path.equalsIgnoreCase(destination)) {
-                        // change the player location to new location
-                        gamePlayer.setLocation(destination);
-                        return "";
-                    }
-                }
-                throw new RuntimeException("The path from current location '" + gamePlayer.getLocation() + "' to '" + destination);
+                return this.parseActionGoto(gamePlayer, words);
             case "look":
-                StringBuilder stringBuilder = new StringBuilder();
-                stringBuilder.append("You are in ").append(gameLocation.getLocationDescription()).append("\n");
-                stringBuilder.append("You can see:").append("\n");
-                //iterate through characters, artefacts, furnitures
-                for (GameCharacter character : gameLocation.getCharacters()) {
-                    stringBuilder.append(character.getDescription()).append("\n");
-                }
-                for (GameArtefact gameArtefact : gameLocation.getArtefacts()) {
-                    stringBuilder.append(gameArtefact.getDescription()).append("\n");
-                }
-                for (GameFurniture furniture : gameLocation.getFurnitures()) {
-                    stringBuilder.append(furniture.getDescription()).append("\n");
-                }
-                stringBuilder.append("You can access from here:").append("\n");
-                HashSet<String> gPaths = gamePaths.get(gamePlayer.getLocation());
-                for (String path : gPaths) {
-                    stringBuilder.append(path).append("\n");
-                }
-                return stringBuilder.toString();
+                return this.parseActionLook(gamePlayer, words);
+            case "health":
+                return this.parseActionHealth(gamePlayer, words);
             default:
-                return this.parseComplexAction(gamePlayer, action);
+                return this.parseComplexAction(gamePlayer, words);
+        }
+    }
+
+    private String doesCommmandContainTrigger(LinkedList<String> words) {
+        for(String word : words) {
+            if(availableTriggers.contains(word)) {
+                return word;
+            }
         }
         return "";
     }
 
-    private String parseComplexAction(GamePlayer gamePlayer, String command) {
-        GameLocation gameLocation = gameLocations.get(gamePlayer.getLocation());
-        LinkedList<String> wordList = new LinkedList<>(Arrays.stream(command.split(" ")).toList());
+    private String doesCommandContainSubject(LinkedList<String> words) {
+        for(String word : words) {
+            if(availableSubjects.contains(word)) {
+                return word;
+            }
+        }
+        return "";
+    }
 
-        //See if the query is valid
-        //for a custom action we need a trigger and it least one of the subjects.
-        // If we have trigers from more than one action we throw exception.
-        //if we have zero or more than its subjects we throw error. A trigger can
-        // be associated with more than one game action so If we have a trigger but
-        // subjects are not from exactly one action we throw error.
-        // In the end we should have one trigger and subjects should not be empty, and they should all be from one action.
-        HashSet<String> availableTriggers = new HashSet<>(gameActions.keySet());
+    private String doesCommandContainLocation(LinkedList<String> words) {
+        for (String word : words ) {
+            if(gameLocations.containsKey(word)) {
+                return word;
+            }
+        }
+        return "";
+    }
+
+    private boolean doesCommandContainTriggerExcept(LinkedList<String> words, String... exceptions) {
+        //copy available command and remove the exception
+        HashSet<String> copyOfavailableTriggers = new HashSet<>(availableTriggers);
+        for(String exception : exceptions) {
+            copyOfavailableTriggers.remove(exception);
+        }
+        for(String word : words) {
+            if(copyOfavailableTriggers.contains(word)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private boolean doesCommandContainSubjectsExcept(LinkedList<String> words, String... exceptions) {
+        HashSet<String> copyOfAvailableSubjects = new HashSet<>(availableSubjects);
+        for(String exception : exceptions) {
+            copyOfAvailableSubjects.remove(exception);
+        }
+        for(String word : words) {
+            if(copyOfAvailableSubjects.contains(word)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private boolean doesCommandContainLocationExcept(LinkedList<String> words, String... exceptions) {
+        HashSet<String> copyOfAvailableLocations = new HashSet<>(gameLocations.keySet());
+        for(String exception : exceptions) {
+            copyOfAvailableLocations.remove(exception);
+        }
+        for(String word : words) {
+            if(copyOfAvailableLocations.contains(word)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private String parseActionInventory(GamePlayer gameplayer, LinkedList<String> words) {
+        //  for inventory, we only need word inventory no extra built-in
+        //  trigger or subjects should be present
+
+        if(!this.doesCommandContainSubject(words).isEmpty()) {
+            throw new RuntimeException("Subject not allowed in command");
+        }
+        if(this.doesCommandContainTriggerExcept(words, "inv", "inventory")) {
+            throw new RuntimeException("Multiple triggers now allowed in command");
+        }
+        return gameplayer.showInventory();
+    }
+
+    private String parseActionGet(GamePlayer gamePlayer, LinkedList<String> words) {
+        if(this.doesCommandContainTriggerExcept(words, "get")) {
+            throw new RuntimeException("Multiple triggers not allowed in get command");
+        }
+
+        String subject = this.doesCommandContainSubject(words);
+        if(subject.isEmpty()) {
+            throw new RuntimeException("Get command requires a subjects");
+        }
+
+        if(this.doesCommandContainSubjectsExcept(words, subject)) {
+            throw new RuntimeException("Multiple subjects not allowed in get command");
+        }
+        GameLocation gameLocation = gameLocations.get(gamePlayer.getLocation());
+
+        // the subject should be artefact and should be present in the current location of the player
+        if(!gameLocation.isArtefactPresent(subject)) {
+            throw new RuntimeException("Artefact could not be found in current location");
+        }
+
+        // Remove the item from the location and add it in player's inventory
+        gamePlayer.addItem(gameLocation.getArtefact(subject));
+        gameLocation.removeArtefact(subject);
+
+        StringBuilder ret = new StringBuilder();
+        ret.append(gamePlayer.getName()).append(" picked up ").append(subject);
+        return ret.toString();
+    }
+
+    private String parseActionDrop(GamePlayer gamePlayer, LinkedList<String> words) {
+        if(this.doesCommandContainTriggerExcept(words, "drop")) {
+            throw new RuntimeException("Multiple triggers not allowed in drop command");
+        }
+
+        String subject = this.doesCommandContainSubject(words);
+        if(subject.isEmpty()) {
+            throw new RuntimeException("drop command requires a subjects");
+        }
+        if(this.doesCommandContainSubjectsExcept(words, subject)) {
+            throw new RuntimeException("Multiple subjects not allowed in drop command");
+        }
+        GameLocation gameLocation = gameLocations.get(gamePlayer.getLocation());
+
+        // the subject should be artefact and should be present in the current location of the player
+        if(!gamePlayer.isArtefactPresent(subject)) {
+            throw new RuntimeException("Artefact could not be found in player's inventory");
+        }
+        gameLocation.addArtefact(gamePlayer.getArtefact(subject));
+        gamePlayer.removeArtefact(subject);
+
+        StringBuilder ret = new StringBuilder();
+        ret.append(gamePlayer.getName()).append(" dropped ").append(subject);
+        return ret.toString();
+    }
+
+    private String parseActionGoto(GamePlayer gamePlayer, LinkedList<String> words) {
+        if(this.doesCommandContainTriggerExcept(words, "goto")) {
+            throw new RuntimeException("Multiple triggers not allowed in goto command");
+        }
+
+        if(!doesCommandContainSubject(words).isEmpty()) {
+            throw new RuntimeException("Goto command requires does not require subjects");
+        }
+
+        String newLocation = this.doesCommandContainLocation(words);
+        if(newLocation.isEmpty()) {
+            throw new RuntimeException("Goto command requires a destination location");
+        }
+        if(doesCommandContainLocationExcept(words, newLocation)) {
+            throw new RuntimeException("Multiple locations not allowed in goto command");
+        }
+
+        if(!newLocation.equalsIgnoreCase(gamePlayer.getLocation())) {
+            // see if there is a path from current location to the destination
+            if (!gamePaths.get(gamePlayer.getLocation()).contains(newLocation)) {
+                throw new RuntimeException("Location is not accessible from current location of the player");
+            }
+
+            GameLocation oldLocation = gameLocations.get(gamePlayer.getLocation());
+            oldLocation.removePlayer(gamePlayer.getName());
+            gamePlayer.setLocation(newLocation);
+        }
+
+        return this.getPlayerPerspective(gamePlayer);
+    }
+
+    private String parseActionLook(GamePlayer gamePlayer, LinkedList<String> words) {
+        // no other trigger, no subjects and no location is required
+        if(this.doesCommandContainTriggerExcept(words, "look")) {
+            throw new RuntimeException("Multiple triggers not allowed in look command");
+        }
+        if(!this.doesCommandContainSubject(words).isEmpty()) {
+            throw new RuntimeException("Look command requires does not require subjects");
+        }
+        if(!this.doesCommandContainLocation(words).isEmpty()) {
+            throw new RuntimeException("Look command requires does not require location");
+        }
+        return this.getPlayerPerspective(gamePlayer);
+    }
+
+    private String parseActionHealth(GamePlayer gamePlayer, LinkedList<String> words) {
+        // no other trigger, no subjects and no location is required
+        if(this.doesCommandContainTriggerExcept(words, "health")) {
+            throw new RuntimeException("Multiple triggers not allowed in health command");
+        }
+        if(!doesCommandContainSubject(words).isEmpty()) {
+            throw new RuntimeException("Health command requires does not require subjects");
+        }
+        if(!doesCommandContainLocation(words).isEmpty()) {
+            throw new RuntimeException("Health command requires does not require location");
+        }
+        StringBuilder ret = new StringBuilder();
+        ret.append(gamePlayer.getName()).append("'s health is: ").append(gamePlayer.getHealth()).append("\n");
+        return ret.toString();
+    }
+
+    private String getPlayerPerspective(GamePlayer gamePlayer) {
+        GameLocation gameLocation = gameLocations.get(gamePlayer.getLocation());
+        StringBuilder stringBuilder = new StringBuilder();
+        stringBuilder.append("You are in ").append(gameLocation.getLocationDescription()).append(":\n");
+        stringBuilder.append("You can see:").append("\n");
+        //iterate through characters, artefacts, furniture
+        for (GameCharacter character : gameLocation.getCharacters()) {
+            stringBuilder.append(character.getDescription()).append("\n");
+        }
+        for (GameArtefact gameArtefact : gameLocation.getArtefacts()) {
+            stringBuilder.append(gameArtefact.getDescription()).append("\n");
+        }
+        for (GameFurniture furniture : gameLocation.getFurnitures()) {
+            stringBuilder.append(furniture.getDescription()).append("\n");
+        }
+        for (String player : gameLocation.getPlayers()) {
+            if(!gamePlayer.getName().equalsIgnoreCase(player)) {
+                stringBuilder.append("Player :").append(player).append("\n");
+            }
+        }
+        stringBuilder.append("You can access from here:").append("\n");
+        HashSet<String> gPaths = gamePaths.get(gamePlayer.getLocation());
+        for (String path : gPaths) {
+            stringBuilder.append(path).append("\n");
+        }
+        return stringBuilder.toString();
+    }
+
+    private String parseComplexAction(GamePlayer gamePlayer, LinkedList<String> wordList) {
+        GameLocation gameLocation = gameLocations.get(gamePlayer.getLocation());
         HashSet<String> commandTriggers = new HashSet<>();
 
         for(String word : wordList) {
@@ -366,65 +561,48 @@ public final class GameServer {
         GameAction commandAction  = null; // Action to be performed
         // if command triggers is empty throw error
         if(commandTriggers.isEmpty()) {
-            throw new RuntimeException("No command triggers in action " + command);
+            throw new RuntimeException("No command triggers in action ");
         }
-        else if(commandTriggers.size() > 1) {
-            // all triggers should have one common action
-            Iterator<String> iterator = commandTriggers.iterator();
-            HashSet<GameAction> commonActions = gameActions.get(iterator.next());
-            while(iterator.hasNext()) {
-                commonActions.retainAll(gameActions.get(iterator.next()));
-            }
-            if(commonActions.size() != 1) {
-                throw new RuntimeException("Triggers from different actions are not supported");
-            }
-            commandAction = commonActions.iterator().next();
-            // We should have at least one of the subjects of the common action
-            HashSet<String> subjects = commandAction.getSubjects();
-            boolean found = false;
-            for(String subject : subjects) {
+
+        HashSet<HashSet<String>> subjectsSet = new HashSet<HashSet<String>>();
+        HashSet<GameAction> actions = new HashSet<>();
+        for(String commandTrigger : commandTriggers) {
+            actions.addAll(gameActions.get(commandTriggers.iterator().next()));
+        }
+
+        //keep iterating through all the actions and when a subject from an action is found
+        // there should be no other subjects from a different action
+        boolean first = true;
+        for(GameAction action : actions) {
+            // compile a list of subjects for this action
+            HashSet<String> foundSubjects = new HashSet<>();
+            Iterator<String> itr = action.getSubjects().iterator();
+            while(itr.hasNext()) {
+                String subject = itr.next();
                 if(wordList.contains(subject)) {
-                    found = true;
-                    break;
+                    foundSubjects.add(subject);
                 }
             }
-            if(!found) {
-                throw new RuntimeException("Required subjects for given trigger(s) not found");
-            }
-        }
-        else {
-            HashSet<HashSet<String>> subjects = new HashSet<HashSet<String>>();
-            HashSet<GameAction> actions = gameActions.get(commandTriggers.iterator().next());
-            //keep iterating through all the actions and when a subject from an action is found
-            // there should be no other subject from a different action
-            boolean first = true;
-            for(GameAction action : actions) {
-                // compile a list of subjects for this action
-                HashSet<String> foundSubjects = new HashSet<>();
-                Iterator<String> itr = action.getSubjects().iterator();
-                while(itr.hasNext()) {
-                    String subject = itr.next();
-                    if(wordList.contains(subject)) {
-                        foundSubjects.add(subject);
-                    }
+            if(foundSubjects.size() > 1){
+                subjectsSet.add(foundSubjects);
+                if(first){
+                    commandAction = action;
+                    first = false;
                 }
-                if(foundSubjects.size() > 1){
-                    subjects.add(foundSubjects);
-                    if(first){
-                        commandAction = action;
-                        first = false;
-                    }
-                }
-            }
-
-            // We should have only one entry in subjects for a query to be valid else throw error
-            if(subjects.size() != 1) {
-                throw new RuntimeException("All triggers the subjects should be from exactly one action");
             }
         }
 
-        if(commandAction == null) {
-            throw new RuntimeException("No valid action found in command ");
+        // We should have only one entry in subjects for a query to be valid else throw error
+        if(subjectsSet.size() != 1) {
+            throw new RuntimeException("All triggers the subjects should be from exactly one action");
+        }
+
+        //Ensure that the command does not contain subjects other than the ones required to perform this action
+        HashSet<String> subjects = new HashSet<>(commandAction.getSubjects());
+        for(String word : wordList){
+            if(availableSubjects.contains(word) && !subjects.contains(word)) {
+                throw new RuntimeException("All the subjects should be from exactly one action");
+            }
         }
 
         //See if we can act on valid query
@@ -432,27 +610,27 @@ public final class GameServer {
         // If even a single subject is unavailable throw exception.
         // compile list of all the subjects available to the player
         HashSet<String> availableEntities = new HashSet<>();
-        availableEntities.addAll(gamePlayer.getArtefactNames());
-        availableEntities.addAll(gameLocation.getEntityNames());
-        availableEntities.addAll(gamePaths.get(gamePlayer.getLocation()));
-        availableEntities.remove("storeroom");
+        availableEntities.addAll(gamePlayer.getArtefactNames()); // player's inventory
+        availableEntities.addAll(gameLocation.getEntityNames()); // Entities at current location
+        availableEntities.addAll(gamePaths.get(gamePlayer.getLocation())); // Current location
 
         for(String subject: commandAction.getSubjects()) {
             if(!availableEntities.contains(subject)) {
-                throw new RuntimeException("Artefact :'" + subject + "' is not in available to player");
+                throw new RuntimeException("Subject(s) required to execute action are missing");
             }
         }
 
         //Act on the query/command
         //Delete the consumed item from where it was located (either player's inventory or room)
+        // and place it in storeroom.
         HashSet<String> consumed = commandAction.getConsumed();
-        HashSet<String> produced = commandAction.getProduced();
         for(String item : consumed) {
             if(item.equalsIgnoreCase("health")) {
                 gamePlayer.decrementHealth();
                 if(gamePlayer.getHealth() == 0){
                     // drop everything
                     gameLocation.getArtefacts().addAll(gamePlayer.getArtefacts());
+                    gameLocation.removePlayer(gamePlayer.getName());
                     gamePlayer.removeAllArtefacts();
                     //respawn
                     gamePlayer.checkHealthAndRespawn(playersStartLocation);
@@ -463,13 +641,10 @@ public final class GameServer {
                 gameLocations.get("storeroom").addArtefact(gamePlayer.getArtefact(item));
                 gamePlayer.removeArtefact(item);
             }
-            // or current location and remove it from there
-            else if(gameLocation.isEntityPresent(item)) {
-                gameLocations.get("storeroom").addEntity(gameLocation.getEntity(item));
-                gameLocation.removeEntity(item);
-            } else if (gameLocations.containsKey(item)) {
-                // remove path from current location to this location
+            // else if consumed entity is a location
+            else if (gameLocations.containsKey(item) && !item.equalsIgnoreCase("storeroom")) {
                 // get all the paths from current location
+                // remove path from current location to this location
                 Iterator<String> iterator = gamePaths.get(gamePlayer.getLocation()).iterator();
                 while (iterator.hasNext()) {
                     if (iterator.next().equalsIgnoreCase(item)) {
@@ -478,25 +653,41 @@ public final class GameServer {
                     }
                 }
             }
+            // or any game location and remove it from there and move it to storeroom
+            else {
+                for(GameLocation location : gameLocations.values()) {
+                    if(!location.getLocationName().equalsIgnoreCase("storeroom")
+                            && location.isEntityPresent(item)){
+                        gameLocations.get("storeroom").addEntity(location.getEntity(item));
+                        location.removeEntity(item);
+                        break;
+                    }
+                }
+            }
         }
 
         // produced item is moved from store room to current location
+        HashSet<String> produced = commandAction.getProduced();
         for(String item : produced) {
             if(item.equalsIgnoreCase("health")) {
                 gamePlayer.incrementHealth();
             }
-            // see if produced item is present in storeroom. If present move to player's current location.
-            else if(gameLocations.get("storeroom").isEntityPresent(item)){
-                gameLocation.addEntity( gameLocations.get("storeroom").getEntity(item));
-                gameLocations.get("storeroom").removeEntity(item);
-            }
             // If it is not in storeroom then the item is location
-            else if(gameLocations.containsKey(item)){
+            else if(gameLocations.containsKey(item) && !item.equalsIgnoreCase("storeroom")) {
                 // Add new path from current to said path
                 gamePaths.putIfAbsent(gameLocation.getLocationName(), new HashSet<>());
                 gamePaths.get(gameLocation.getLocationName()).add(item);
             }
-
+            // see if produced item is present anywhere in the game. If present move to player's current location.
+            else {
+                for(GameLocation location : gameLocations.values()) {
+                    if(!location.getLocationName().equalsIgnoreCase(gameLocation.getLocationName())
+                            && location.isEntityPresent(item)) {
+                        gameLocation.addEntity(location.getEntity(item));
+                        location.removeEntity(item);
+                    }
+                }
+            }
         }
 
         //Print the narration of the action
@@ -504,7 +695,7 @@ public final class GameServer {
     }
 
     /**
-    * Do not change the following method signature or we won't be able to mark your submission
+    * Do not change the following method signature, or we won't be able to mark your submission
     * Starts a *blocking* socket server listening for new connections.
     *
     * @param portNumber The port to listen on.
@@ -512,10 +703,12 @@ public final class GameServer {
     */
     public void blockingListenOn(int portNumber) throws IOException {
         try (ServerSocket s = new ServerSocket(portNumber)) {
-            System.out.println("Server listening on port " + portNumber);
+            StringBuilder message = new StringBuilder();
+            message.append("Server listening on port ").append(portNumber);
+            System.out.println(message.toString());
             while (!Thread.interrupted()) {
                 try {
-                    blockingHandleConnection(s);
+                    this.blockingHandleConnection(s);
                 } catch (IOException e) {
                     System.out.println("Connection closed");
                 }
@@ -537,10 +730,14 @@ public final class GameServer {
             System.out.println("Connection established");
             String incomingCommand = reader.readLine();
             if(incomingCommand != null) {
-                System.out.println("Received message from " + incomingCommand);
-                String result = handleCommand(incomingCommand);
+                StringBuilder message = new StringBuilder();
+                message.append("Received message from ").append(incomingCommand);
+                System.out.println(message);
+                String result = this.handleCommand(incomingCommand);
                 writer.write(result);
-                writer.write("\n" + END_OF_TRANSMISSION + "\n");
+                writer.write("\n");
+                writer.write(END_OF_TRANSMISSION);
+                writer.write("\n");
                 writer.flush();
             }
         }

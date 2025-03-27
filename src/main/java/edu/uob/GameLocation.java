@@ -9,6 +9,7 @@ public class GameLocation {
     private HashSet<GameCharacter> characters = new HashSet<>();
     private HashSet<GameArtefact> artefacts = new HashSet<>();
     private HashSet<GameFurniture> furnitures = new HashSet<>();
+    private HashSet<String> players = new HashSet<>();
 
     GameLocation(String locationName, String locationDescription) {
         this.locationName = locationName;
@@ -38,9 +39,8 @@ public class GameLocation {
     public void addArtefact(GameArtefact artefact){
         this.artefacts.add(artefact);
     }
-    public void addFurniture(GameFurniture furniture){
-        this.furnitures.add(furniture);
-    }
+    public void addFurniture(GameFurniture furniture){this.furnitures.add(furniture);}
+    public void addPlayer(String playerName){this.players.add(playerName);}
 
     public HashSet<GameEntity> getEntities() {
         HashSet<GameEntity> entities = new HashSet<>();
@@ -58,6 +58,7 @@ public class GameLocation {
     public HashSet<GameFurniture> getFurnitures(){
         return furnitures;
     }
+    public HashSet<String> getPlayers(){return players;}
 
     public HashSet<String> getEntityNames(){
         HashSet<String> names = new HashSet<>();
@@ -92,7 +93,7 @@ public class GameLocation {
     }
 
     public boolean isEntityPresent(String entityName){
-        return isCharacterPresent(entityName) || isArtefactPresent(entityName) || isFurniturePresent(entityName);
+        return this.isCharacterPresent(entityName) || this.isArtefactPresent(entityName) || this.isFurniturePresent(entityName);
     }
 
     public Boolean isCharacterPresent(String characterName){
@@ -123,14 +124,14 @@ public class GameLocation {
     }
 
     public GameEntity getEntity(String entityName){
-        if(isCharacterPresent(entityName)) {
-            return getCharacter(entityName);
+        if(this.isCharacterPresent(entityName)) {
+            return this.getCharacter(entityName);
         }
-        else if(isArtefactPresent(entityName)) {
-            return getArtefact(entityName);
+        else if(this.isArtefactPresent(entityName)) {
+            return this.getArtefact(entityName);
         }
-        else if(isFurniturePresent(entityName)) {
-            return getFurniture(entityName);
+        else if(this.isFurniturePresent(entityName)) {
+            return this.getFurniture(entityName);
         }
         return null;
     }
@@ -163,27 +164,37 @@ public class GameLocation {
     }
 
     public void removeEntity(String entityName){
-        if(isCharacterPresent(entityName)) {
-            removeCharacter(entityName);
+        if(this.isCharacterPresent(entityName)) {
+            this.removeCharacter(entityName);
         }
-        else if(isArtefactPresent(entityName)) {
-            removeArtefact(entityName);
+        else if(this.isArtefactPresent(entityName)) {
+            this.removeArtefact(entityName);
         }
-        else if(isFurniturePresent(entityName)) {
-            removeFurniture(entityName);
+        else if(this.isFurniturePresent(entityName)) {
+            this.removeFurniture(entityName);
         }
     }
 
 
     public void removeCharacter(String characterName){
-        characters.removeIf(character -> character.getName().equalsIgnoreCase(characterName));
+        if(this.isCharacterPresent(characterName)) {
+            this.removeCharacter(characterName);
+        }
     }
 
     public void removeArtefact(String artefactName){
-        artefacts.removeIf(artefact -> artefact.getName().equalsIgnoreCase(artefactName));
+        if(this.isArtefactPresent(artefactName)) {
+            this.removeArtefact(artefactName);
+        }
     }
 
     public void removeFurniture(String furnitureName){
-        furnitures.removeIf(furniture -> furniture.getName().equalsIgnoreCase(furnitureName));
+        if(this.isFurniturePresent(furnitureName)) {
+            this.removeFurniture(furnitureName);
+        }
+    }
+
+    public void removePlayer(String playerName){
+        players.remove(playerName);
     }
 }
