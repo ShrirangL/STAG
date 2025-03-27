@@ -569,16 +569,15 @@ public final class GameServer {
             throw new RuntimeException("No command triggers in action ");
         }
 
-        HashSet<HashSet<String>> subjectsSet = new HashSet<HashSet<String>>();
-        HashSet<GameAction> actions = new HashSet<>();
+        HashSet<GameAction> validActions = new HashSet<GameAction>();
+        HashSet<GameAction> possibleActions = new HashSet<>();
         for(String commandTrigger : commandTriggers) {
-            actions.addAll(gameActions.get(commandTriggers.iterator().next()));
+            possibleActions.addAll(gameActions.get(commandTrigger));
         }
 
         //keep iterating through all the actions and when a subject from an action is found
         // there should be no other subjects from a different action
-        boolean first = true;
-        for(GameAction action : actions) {
+        for(GameAction action : possibleActions) {
             // compile a list of subjects for this action
             HashSet<String> foundSubjects = new HashSet<>();
             Iterator<String> itr = action.getSubjects().iterator();
@@ -589,18 +588,15 @@ public final class GameServer {
                 }
             }
             if(foundSubjects.size() > 1){
-                subjectsSet.add(foundSubjects);
-                if(first){
-                    commandAction = action;
-                    first = false;
-                }
+                validActions.add(action);
             }
         }
 
-        // We should have only one entry in subjects for a query to be valid else throw error
-        if(subjectsSet.size() != 1) {
-            throw new RuntimeException("All triggers the subjects should be from exactly one action");
+        if(validActions.size() != 1){
+            throw new RuntimeException("Input command is ambiguous");
         }
+
+        commandAction = validActions.iterator().next();
 
         //Ensure that the command does not contain subjects other than the ones required to perform this action
         HashSet<String> subjects = new HashSet<>(commandAction.getSubjects());
@@ -611,9 +607,8 @@ public final class GameServer {
         }
 
         //See if we can act on valid query
-        //We should now check if all the subject related to that trigger is either possessed by player or in the room.
+        //We should now check if all the subject required to perform the actions are either possessed by player or in the room.
         // If even a single subject is unavailable throw exception.
-        // compile list of all the subjects available to the player
         HashSet<String> availableEntities = new HashSet<>();
         availableEntities.addAll(gamePlayer.getArtefactNames()); // player's inventory
         availableEntities.addAll(gameLocation.getEntityNames()); // Entities at current location
