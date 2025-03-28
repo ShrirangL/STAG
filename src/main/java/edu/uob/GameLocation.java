@@ -3,6 +3,7 @@ package edu.uob;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.stream.Collectors;
 
 public class GameLocation {
     private final String locationName;
@@ -173,13 +174,13 @@ public class GameLocation {
     }
 
     public void removeEntity(String entityName){
-        if(this.getArtefactNames().contains(entityName)) {
+        if(this.isArtefactPresent(entityName)) {
             this.removeArtefact(entityName);
         }
-        else if(this.getCharacterNames().contains(entityName)) {
+        else if(this.isCharacterPresent(entityName)) {
             this.removeCharacter(entityName);
         }
-        else if(this.getFurnitureNames().contains(entityName)) {
+        else if(this.isFurniturePresent(entityName)) {
             this.removeFurniture(entityName);
         }
     }
@@ -214,12 +215,17 @@ public class GameLocation {
         while (iterator.hasNext()) {
             GameFurniture furniture = iterator.next();
             if (furniture.getName().equalsIgnoreCase(furnitureName)) {
-                iterator.remove();  // Safely remove the element
+                iterator.remove();
             }
         }
     }
 
     public void removePlayer(String playerName){
-        players.remove(playerName);
+        Iterator<String> iterator = players.iterator();
+        while (iterator.hasNext()) {
+            if (iterator.next().equalsIgnoreCase(playerName)) {
+                iterator.remove();
+            }
+        }
     }
 }

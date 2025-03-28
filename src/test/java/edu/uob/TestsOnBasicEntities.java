@@ -215,6 +215,9 @@ public class TestsOnBasicEntities {
         assertTrue(response.contains("forest") && response.contains("log") && !response.contains("tree"));
 
         //storeroom should have tree and key at this point.
+
+        response = sendCommandToServer("shrirang: check my health");
+        assertTrue(response.contains("3"));
     }
 
     @Test

@@ -20,6 +20,7 @@ import java.nio.file.Paths;
 import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 public final class GameServer {
 
@@ -116,8 +117,8 @@ public final class GameServer {
         while (locations.hasNext()) {
             Graph location = locations.next();
             Node locationDetails = location.getNodes(false).get(0);
-            String locationName = locationDetails.getId().getId().toLowerCase();
-            String locationDescription = locationDetails.getAttribute("description").toLowerCase();
+            String locationName = locationDetails.getId().getId();
+            String locationDescription = locationDetails.getAttribute("description");
 
             if(first){
                 playersStartLocation = locationName;
@@ -130,12 +131,12 @@ public final class GameServer {
             // Iterate through all the entity categories inside a location
             while (entities.hasNext()) {
                 Graph entity = entities.next();
-                String graphName = entity.getId().getId().toLowerCase();
+                String graphName = entity.getId().getId();
                 Iterator<Node> items = entity.getNodes(false).iterator();
                 while (items.hasNext()) {
                     Node item = items.next();
-                    String itemName = item.getId().getId().toLowerCase();
-                    String itemDescription = item.getAttribute("description").toLowerCase();
+                    String itemName = item.getId().getId();
+                    String itemDescription = item.getAttribute("description");
                     switch (graphName){
                         case "characters":
                             gameLocation.addCharacter(new GameCharacter(itemName, itemDescription, locationName, -1));
@@ -153,7 +154,7 @@ public final class GameServer {
         }
 
         // check if storeroom was found, if not create an empty location named storeroom
-        if(!gameLocations.containsKey("storeroom")){
+        if(!gameLocations.keySet().stream().map(String::toLowerCase).collect(Collectors.toSet()).contains("storeroom")){
             gameLocations.put("storeroom", new GameLocation("storeroom", "storage for any entities not placed in the game"));
         }
 
@@ -162,9 +163,9 @@ public final class GameServer {
         while (paths.hasNext()) {
             Edge path = paths.next();
             Node fromLocation = path.getSource().getNode();
-            String fromName = fromLocation.getId().getId().toLowerCase();
+            String fromName = fromLocation.getId().getId();
             Node toLocation = path.getTarget().getNode();
-            String toName = toLocation.getId().getId().toLowerCase();
+            String toName = toLocation.getId().getId();
             gamePaths.putIfAbsent(fromName, new HashSet<>());
             gamePaths.get(fromName).add(toName);
         }
@@ -184,7 +185,7 @@ public final class GameServer {
             for (int j = 0; j < triggers.getLength(); j++) {
                 NodeList keyphrases = ((Element)triggers.item(j)).getElementsByTagName("keyphrase");
                 for(int k = 0; k < keyphrases.getLength(); k++) {
-                    gameAction.addTrigger(keyphrases.item(k).getTextContent().toLowerCase());
+                    gameAction.addTrigger(keyphrases.item(k).getTextContent());
                 }
             }
 
@@ -193,7 +194,7 @@ public final class GameServer {
             for (int j = 0; j < subjects.getLength(); j++) {
                 NodeList subjectEntities = ((Element)subjects.item(j)).getElementsByTagName("entity");
                 for(int k = 0; k < subjectEntities.getLength(); k++) {
-                    gameAction.addSubject(subjectEntities.item(k).getTextContent().toLowerCase());
+                    gameAction.addSubject(subjectEntities.item(k).getTextContent());
                 }
             }
 
@@ -202,7 +203,7 @@ public final class GameServer {
             for (int j = 0; j < consumed.getLength(); j++) {
                 NodeList consumedEntities = ((Element)consumed.item(j)).getElementsByTagName("entity");
                 for(int k = 0; k < consumedEntities.getLength(); k++) {
-                    gameAction.addConsumed(consumedEntities.item(k).getTextContent().toLowerCase());
+                    gameAction.addConsumed(consumedEntities.item(k).getTextContent());
                 }
             }
 
@@ -211,7 +212,7 @@ public final class GameServer {
             for (int j = 0; j < produced.getLength(); j++) {
                 NodeList producedEntities = ((Element)produced.item(j)).getElementsByTagName("entity");
                 for(int k = 0; k < producedEntities.getLength(); k++) {
-                    gameAction.addProduced(producedEntities.item(k).getTextContent().toLowerCase());
+                    gameAction.addProduced(producedEntities.item(k).getTextContent());
                 }
             }
 
@@ -244,7 +245,7 @@ public final class GameServer {
                 throw new RuntimeException("Name must consist only of letters, spaces, apostrophes and hyphens");
             }
 
-            if(!gamePlayers.containsKey(name)) {
+            if(!gamePlayers.keySet().stream().map(String::toLowerCase).collect(Collectors.toSet()).contains(name.toLowerCase())) {
                 gamePlayers.put(name, new GamePlayer(name, "", playersStartLocation));
                 gameLocations.get(playersStartLocation).addPlayer(name);
             }
@@ -290,20 +291,6 @@ public final class GameServer {
             throw new RuntimeException("No action found");
         }
 
-        // Only words which are either triggers or subjects or locations should remain
-        Iterator<String> iterator = words.iterator();
-        while (iterator.hasNext()) {
-            String word = iterator.next();
-            if (!(availableTriggers.contains(word) || availableSubjects.contains(word) || gameLocations.containsKey(word))) {
-                iterator.remove();
-            }
-        }
-
-        //If we have no trigger and subjects we can't do anything
-        if (words.isEmpty()) {
-            throw new RuntimeException("Ensure that there is valid trigger and subject in ");
-        }
-
         String trigger = this.doesCommmandContainTrigger(words);
 
         switch (trigger) {
@@ -327,7 +314,7 @@ public final class GameServer {
 
     private String doesCommmandContainTrigger(LinkedList<String> words) {
         for(String word : words) {
-            if(availableTriggers.contains(word)) {
+            if(availableTriggers.stream().map(String::toLowerCase).collect(Collectors.toSet()).contains(word.toLowerCase())) {
                 return word;
             }
         }
@@ -336,7 +323,10 @@ public final class GameServer {
 
     private String doesCommandContainSubject(LinkedList<String> words) {
         for(String word : words) {
-            if(availableSubjects.contains(word)) {
+            if(availableSubjects.stream()
+                    .map(String::toLowerCase)
+                    .collect(Collectors.toSet())
+                    .contains(word.toLowerCase())) {
                 return word;
             }
         }
@@ -345,7 +335,10 @@ public final class GameServer {
 
     private String doesCommandContainLocation(LinkedList<String> words) {
         for (String word : words ) {
-            if(gameLocations.containsKey(word)) {
+            if(gameLocations.keySet().stream()
+                    .map(String::toLowerCase)
+                    .collect(Collectors.toSet())
+                    .contains(word.toLowerCase())) {
                 return word;
             }
         }
@@ -354,12 +347,20 @@ public final class GameServer {
 
     private boolean doesCommandContainTriggerExcept(LinkedList<String> words, String... exceptions) {
         //copy available command and remove the exception
-        HashSet<String> copyOfavailableTriggers = new HashSet<>(availableTriggers);
+        HashSet<String> copyOfAvailableTriggers = new HashSet<>(availableTriggers);
         for(String exception : exceptions) {
-            copyOfavailableTriggers.remove(exception);
+            Iterator<String> iterator = copyOfAvailableTriggers.iterator();
+            while (iterator.hasNext()) {
+                if (iterator.next().equalsIgnoreCase(exception)) {
+                    iterator.remove();
+                }
+            }
         }
         for(String word : words) {
-            if(copyOfavailableTriggers.contains(word)) {
+            if(copyOfAvailableTriggers.stream()
+                    .map(String::toLowerCase)
+                    .collect(Collectors.toSet())
+                    .contains(word.toLowerCase())) {
                 return true;
             }
         }
@@ -369,10 +370,17 @@ public final class GameServer {
     private boolean doesCommandContainSubjectsExcept(LinkedList<String> words, String... exceptions) {
         HashSet<String> copyOfAvailableSubjects = new HashSet<>(availableSubjects);
         for(String exception : exceptions) {
-            copyOfAvailableSubjects.remove(exception);
+            Iterator<String> iterator = copyOfAvailableSubjects.iterator();
+            while (iterator.hasNext()) {
+                if (iterator.next().equalsIgnoreCase(exception)) {
+                    iterator.remove();
+                }
+            }
         }
         for(String word : words) {
-            if(copyOfAvailableSubjects.contains(word)) {
+            if(copyOfAvailableSubjects.stream()
+                    .map(String::toLowerCase)
+                    .collect(Collectors.toSet()).contains(word.toLowerCase())) {
                 return true;
             }
         }
@@ -382,10 +390,17 @@ public final class GameServer {
     private boolean doesCommandContainLocationExcept(LinkedList<String> words, String... exceptions) {
         HashSet<String> copyOfAvailableLocations = new HashSet<>(gameLocations.keySet());
         for(String exception : exceptions) {
-            copyOfAvailableLocations.remove(exception);
+            Iterator<String> iterator = copyOfAvailableLocations.iterator();
+            while (iterator.hasNext()) {
+                if (iterator.next().equalsIgnoreCase(exception)) {
+                    iterator.remove();
+                }
+            }
         }
         for(String word : words) {
-            if(copyOfAvailableLocations.contains(word)) {
+            if(copyOfAvailableLocations.stream()
+                    .map(String::toLowerCase)
+                    .collect(Collectors.toSet()).contains(word.toLowerCase())) {
                 return true;
             }
         }
@@ -483,7 +498,9 @@ public final class GameServer {
 
         if(!newLocation.equalsIgnoreCase(gamePlayer.getLocation())) {
             // see if there is a path from current location to the destination
-            if (!gamePaths.get(gamePlayer.getLocation()).contains(newLocation)) {
+            if (!gamePaths.get(gamePlayer.getLocation()).stream()
+                    .map(String::toLowerCase)
+                    .collect(Collectors.toSet()).contains(newLocation.toLowerCase())) {
                 throw new RuntimeException("Location is not accessible from current location of the player");
             }
 
@@ -532,13 +549,13 @@ public final class GameServer {
         stringBuilder.append("You can see:").append("\n");
         //iterate through characters, artefacts, furniture
         for (GameCharacter character : gameLocation.getCharacters()) {
-            stringBuilder.append(character.getDescription()).append("\n");
+            stringBuilder.append(character.getName()).append(": ").append(character.getDescription()).append("\n");
         }
         for (GameArtefact gameArtefact : gameLocation.getArtefacts()) {
-            stringBuilder.append(gameArtefact.getDescription()).append("\n");
+            stringBuilder.append(gameArtefact.getName()).append(": ").append(gameArtefact.getDescription()).append("\n");
         }
         for (GameFurniture furniture : gameLocation.getFurnitures()) {
-            stringBuilder.append(furniture.getDescription()).append("\n");
+            stringBuilder.append(furniture.getName()).append(": ").append(furniture.getDescription()).append("\n");
         }
         for (String player : gameLocation.getPlayers()) {
             if(!gamePlayer.getName().equalsIgnoreCase(player)) {
@@ -558,7 +575,9 @@ public final class GameServer {
         HashSet<String> commandTriggers = new HashSet<>();
 
         for(String word : wordList) {
-            if(availableTriggers.contains(word)) {
+            if(availableTriggers.stream()
+                    .map(String::toLowerCase)
+                    .collect(Collectors.toSet()).contains(word.toLowerCase())) {
                 commandTriggers.add(word);
             }
         }
@@ -583,7 +602,9 @@ public final class GameServer {
             Iterator<String> itr = action.getSubjects().iterator();
             while(itr.hasNext()) {
                 String subject = itr.next();
-                if(wordList.contains(subject)) {
+                if(wordList.stream()
+                        .map(String::toLowerCase)
+                        .collect(Collectors.toSet()).contains(subject.toLowerCase())) {
                     foundSubjects.add(subject);
                 }
             }
@@ -601,7 +622,8 @@ public final class GameServer {
         //Ensure that the command does not contain subjects other than the ones required to perform this action
         HashSet<String> subjects = new HashSet<>(commandAction.getSubjects());
         for(String word : wordList){
-            if(availableSubjects.contains(word) && !subjects.contains(word)) {
+            if(availableSubjects.stream().map(String::toLowerCase).collect(Collectors.toSet()).contains(word.toLowerCase())
+                    && !subjects.stream().map(String::toLowerCase).collect(Collectors.toSet()).contains(word.toLowerCase())) {
                 throw new RuntimeException("All the subjects should be from exactly one action");
             }
         }
@@ -615,7 +637,9 @@ public final class GameServer {
         availableEntities.addAll(gamePaths.get(gamePlayer.getLocation())); // Current location
 
         for(String subject: commandAction.getSubjects()) {
-            if(!availableEntities.contains(subject)) {
+            if(!availableEntities.stream()
+                    .map(String::toLowerCase)
+                    .collect(Collectors.toSet()).contains(subject.toLowerCase())) {
                 throw new RuntimeException("Subject(s) required to execute action are missing");
             }
         }
@@ -642,7 +666,8 @@ public final class GameServer {
                 gamePlayer.removeArtefact(item);
             }
             // else if consumed entity is a location
-            else if (gameLocations.containsKey(item) && !item.equalsIgnoreCase("storeroom")) {
+            else if (gameLocations.keySet().stream().map(String::toLowerCase).collect(Collectors.toSet()).contains(item.toLowerCase())
+                    && !item.equalsIgnoreCase("storeroom")) {
                 // get all the paths from current location
                 // remove path from current location to this location
                 Iterator<String> iterator = gamePaths.get(gamePlayer.getLocation()).iterator();
@@ -673,7 +698,9 @@ public final class GameServer {
                 gamePlayer.incrementHealth();
             }
             // If it is not in storeroom then the item is location
-            else if(gameLocations.containsKey(item) && !item.equalsIgnoreCase("storeroom")) {
+            else if(gameLocations.keySet().stream()
+                    .map(String::toLowerCase)
+                    .collect(Collectors.toSet()).contains(item.toLowerCase()) && !item.equalsIgnoreCase("storeroom")) {
                 // Add new path from current to said path
                 gamePaths.putIfAbsent(gameLocation.getLocationName(), new HashSet<>());
                 gamePaths.get(gameLocation.getLocationName()).add(item);

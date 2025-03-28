@@ -1,6 +1,7 @@
 package edu.uob;
 
 import java.util.HashSet;
+import java.util.Iterator;
 
 public class GamePlayer extends GameEntity {
     protected HashSet<GameArtefact> artefacts;
@@ -41,9 +42,10 @@ public class GamePlayer extends GameEntity {
     }
 
     public void removeArtefact(String artefactName) {
-        for (GameArtefact artefact : artefacts) {
-            if (artefact.getName().equalsIgnoreCase(artefactName)) {
-                artefacts.remove(artefact);
+        Iterator<GameArtefact> itererator = artefacts.iterator();
+        while (itererator.hasNext()) {
+            if (itererator.next().getName().equalsIgnoreCase(artefactName)) {
+                itererator.remove();
                 break;
             }
         }
