@@ -39,7 +39,7 @@ class BuiltInCommandTests {
     @Test
     void validInvTest1() {
         final String response1 = sendCommandToServer("Simon: inv");
-        assertEquals("The player has:\n", response1,
+        assertEquals("Simon has:\n", response1,
             "calling 'inv' with an empty inventory should report back an " +
                 "empty inventory");
     }
@@ -49,7 +49,7 @@ class BuiltInCommandTests {
         sendCommandToServer("Simon: get potion");
         final String response2 = sendCommandToServer("Simon: inv");
         assertEquals("""
-            The player has:
+            Simon has:
             potion
             """, response2,
             "calling 'inv' with a potion in inventory should list potion");
@@ -138,7 +138,7 @@ class BuiltInCommandTests {
         sendCommandToServer("Sion: inv");
         sendCommandToServer("Sion: drop potion");
         final String response4 = sendCommandToServer("Sion: inv");
-        assertEquals("The player has:\n", response4,
+        assertEquals("Sion has:\n", response4,
             "dropping an artefact should remove it from the player's " +
                 "inventory");
     }

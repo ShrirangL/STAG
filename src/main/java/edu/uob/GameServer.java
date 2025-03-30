@@ -64,8 +64,8 @@ public final class GameServer {
     public static void main(String[] args) throws IOException {
         StringBuilder entitiesFilePath = new StringBuilder();
         StringBuilder actionsFilePath = new StringBuilder();
-        entitiesFilePath.append("config").append(File.separator).append("basic-entities.dot");
-        actionsFilePath.append("config").append(File.separator).append("basic-actions.xml");
+        entitiesFilePath.append("config").append(File.separator).append("extended-entities.dot");
+        actionsFilePath.append("config").append(File.separator).append("extended-actions.xml");
 
         File entitiesFile = Paths.get(entitiesFilePath.toString()).toAbsolutePath().toFile();
         File actionsFile = Paths.get(actionsFilePath.toString()).toAbsolutePath().toFile();
@@ -216,6 +216,12 @@ public final class GameServer {
                 }
             }
 
+            //Get action narration
+            NodeList narrations = action.getElementsByTagName("narration");
+            if (narrations.getLength() > 0) {
+                gameAction.setNarration(narrations.item(0).getTextContent());
+            }
+
             // Add game action to list of game actions
             for(String trigger : gameAction.getTriggers()) {
                 gameActions.putIfAbsent(trigger, new HashSet<>());
@@ -231,7 +237,6 @@ public final class GameServer {
     * @param command The incoming command to be processed
     */
     public String handleCommand(String command) {
-        command = command.toLowerCase();
         // TODO implement your server logic here
         // Handle standard built in commands first;
         // find ":" in the incoming string. anything to its left is username
@@ -264,6 +269,10 @@ public final class GameServer {
         GameLocation gameLocation = gameLocations.get(gamePlayer.getLocation());
         if (gameLocation == null) {
             throw new RuntimeException("Invalid player location");
+        }
+        input = input.trim();
+        if(input.equalsIgnoreCase("gamestate")) {
+            return printGameState();
         }
         StringBuilder command = new StringBuilder(input.toLowerCase());
 
@@ -488,27 +497,29 @@ public final class GameServer {
             throw new RuntimeException("Multiple subjects not allowed in goto command");
         }
 
-        String newLocation = this.doesCommandContainLocation(words);
-        if(newLocation.isEmpty()) {
+        String newLocationName = this.doesCommandContainLocation(words);
+        if(newLocationName.isEmpty()) {
             throw new RuntimeException("Goto command requires a destination location");
         }
-        if(this.doesCommandContainLocationExcept(words, newLocation)) {
+        if(this.doesCommandContainLocationExcept(words, newLocationName)) {
             throw new RuntimeException("Multiple locations not allowed in goto command");
         }
 
-        if(!newLocation.equalsIgnoreCase(gamePlayer.getLocation())) {
+        if(newLocationName.equalsIgnoreCase(gamePlayer.getLocation())) {
+            throw new RuntimeException("You are already at this location");
+        }
             // see if there is a path from current location to the destination
             if (!gamePaths.get(gamePlayer.getLocation()).stream()
                     .map(String::toLowerCase)
-                    .collect(Collectors.toSet()).contains(newLocation.toLowerCase())) {
+                    .collect(Collectors.toSet()).contains(newLocationName.toLowerCase())) {
                 throw new RuntimeException("Location is not accessible from current location of the player");
             }
 
-            GameLocation oldLocation = gameLocations.get(gamePlayer.getLocation());
-            oldLocation.removePlayer(gamePlayer.getName());
-            gamePlayer.setLocation(newLocation);
-        }
-
+        GameLocation oldLocation = gameLocations.get(gamePlayer.getLocation());
+        oldLocation.removePlayer(gamePlayer.getName());
+        GameLocation newLocation = gameLocations.get(newLocationName);
+        newLocation.addPlayer(gamePlayer.getName());
+        gamePlayer.setLocation(newLocationName);
         return this.getPlayerPerspective(gamePlayer);
     }
 
@@ -589,34 +600,31 @@ public final class GameServer {
         }
 
         HashSet<GameAction> validActions = new HashSet<GameAction>();
-        HashSet<GameAction> possibleActions = new HashSet<>();
+        HashSet<GameAction> possibleActions = new HashSet<GameAction>();
         for(String commandTrigger : commandTriggers) {
             possibleActions.addAll(gameActions.get(commandTrigger));
         }
 
         //keep iterating through all the actions and when a subject from an action is found
         // there should be no other subjects from a different action
-        for(GameAction action : possibleActions) {
+        for (GameAction action : possibleActions) {
             // compile a list of subjects for this action
             HashSet<String> foundSubjects = new HashSet<>();
             Iterator<String> itr = action.getSubjects().iterator();
-            while(itr.hasNext()) {
+            while (itr.hasNext()) {
                 String subject = itr.next();
-                if(wordList.stream()
+                if (wordList.stream()
                         .map(String::toLowerCase)
                         .collect(Collectors.toSet()).contains(subject.toLowerCase())) {
-                    foundSubjects.add(subject);
+                    validActions.add(action);
+                    break;
                 }
             }
-            if(foundSubjects.size() > 1){
-                validActions.add(action);
-            }
         }
 
-        if(validActions.size() != 1){
+        if (validActions.size() != 1) {
             throw new RuntimeException("Input command is ambiguous");
         }
-
         commandAction = validActions.iterator().next();
 
         //Ensure that the command does not contain subjects other than the ones required to perform this action
@@ -634,7 +642,7 @@ public final class GameServer {
         HashSet<String> availableEntities = new HashSet<>();
         availableEntities.addAll(gamePlayer.getArtefactNames()); // player's inventory
         availableEntities.addAll(gameLocation.getEntityNames()); // Entities at current location
-        availableEntities.addAll(gamePaths.get(gamePlayer.getLocation())); // Current location
+        availableEntities.add(gamePlayer.getLocation()); // Current location
 
         for(String subject: commandAction.getSubjects()) {
             if(!availableEntities.stream()
@@ -645,6 +653,32 @@ public final class GameServer {
         }
 
         //Act on the query/command
+        // produced item is moved from store room to current location
+        HashSet<String> produced = commandAction.getProduced();
+        for(String item : produced) {
+            if(item.equalsIgnoreCase("health")) {
+                gamePlayer.incrementHealth();
+            }
+            // If it is not in storeroom then the item is location
+            else if(gameLocations.keySet().stream()
+                    .map(String::toLowerCase)
+                    .collect(Collectors.toSet()).contains(item.toLowerCase()) && !item.equalsIgnoreCase("storeroom")) {
+                // Add new path from current to said path
+                gamePaths.putIfAbsent(gameLocation.getLocationName(), new HashSet<>());
+                gamePaths.get(gameLocation.getLocationName()).add(item);
+            }
+            // see if produced item is present anywhere in the game. If present move to player's current location.
+            else {
+                for(GameLocation location : gameLocations.values()) {
+                    if(!location.getLocationName().equalsIgnoreCase(gameLocation.getLocationName())
+                            && location.isEntityPresent(item)) {
+                        gameLocation.addEntity(location.getEntity(item));
+                        location.removeEntity(item);
+                    }
+                }
+            }
+        }
+
         //Delete the consumed item from where it was located (either player's inventory or room)
         // and place it in storeroom.
         HashSet<String> consumed = commandAction.getConsumed();
@@ -691,34 +725,53 @@ public final class GameServer {
             }
         }
 
-        // produced item is moved from store room to current location
-        HashSet<String> produced = commandAction.getProduced();
-        for(String item : produced) {
-            if(item.equalsIgnoreCase("health")) {
-                gamePlayer.incrementHealth();
-            }
-            // If it is not in storeroom then the item is location
-            else if(gameLocations.keySet().stream()
-                    .map(String::toLowerCase)
-                    .collect(Collectors.toSet()).contains(item.toLowerCase()) && !item.equalsIgnoreCase("storeroom")) {
-                // Add new path from current to said path
-                gamePaths.putIfAbsent(gameLocation.getLocationName(), new HashSet<>());
-                gamePaths.get(gameLocation.getLocationName()).add(item);
-            }
-            // see if produced item is present anywhere in the game. If present move to player's current location.
-            else {
-                for(GameLocation location : gameLocations.values()) {
-                    if(!location.getLocationName().equalsIgnoreCase(gameLocation.getLocationName())
-                            && location.isEntityPresent(item)) {
-                        gameLocation.addEntity(location.getEntity(item));
-                        location.removeEntity(item);
-                    }
+        //Print the narration of the action
+        return commandAction.getNarration();
+    }
+
+    private String printGameState(){
+        // Iterate through all the locations and print their contents
+        StringBuilder message = new StringBuilder();
+        for(GameLocation location : gameLocations.values()) {
+            message.append(location.getLocationName()).append(": ");
+
+            if(!location.getArtefacts().isEmpty()) {
+                message.append("[artefacts]: ");
+                for (GameArtefact artefact : location.getArtefacts()) {
+                    message.append(artefact.getName()).append(",");
                 }
+            }
+
+            if(!location.getCharacters().isEmpty()) {
+                message.append("[characters]: ");
+                for (GameCharacter character : location.getCharacters()) {
+                    message.append(character.getName()).append(",");
+                }
+            }
+
+            if(!location.getFurnitures().isEmpty()) {
+                message.append("[furniture]: ");
+                for (GameFurniture furniture : location.getFurnitures()) {
+                    message.append(furniture.getName()).append(",");
+                }
+            }
+
+            if(!location.getPlayers().isEmpty()) {
+                message.append("[players]: ");
+                for (String player : location.getPlayers()) {
+                    message.append(player).append(",");
+                }
+            }
+            message.append("\n");
+        }
+        message.append("Paths:").append("\n");
+        for(String source : gamePaths.keySet()) {
+            for(String destination : gamePaths.get(source)){
+                message.append(source).append("-->").append(destination).append("\n");
             }
         }
 
-        //Print the narration of the action
-        return commandAction.getNarration();
+        return message.toString();
     }
 
     /**

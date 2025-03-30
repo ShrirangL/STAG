@@ -1,0 +1,315 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<actions>
+    <gameAction>
+        <triggers>
+            <keyphrase>use</keyphrase>
+            <keyphrase>open</keyphrase>
+            <keyphrase>unlock</keyphrase>
+        </triggers>
+        <subjects>
+            <entity>trapdoor</entity>
+            <entity>key</entity>
+        </subjects>
+        <consumed>
+            <entity>key</entity>
+        </consumed>
+        <produced>
+            <entity>cellar</entity>
+        </produced>
+        <narration>You unlock the door and see steps leading down into a cellar</narration>
+    </gameAction>
+
+    <gameAction>
+        <triggers>
+            <keyphrase>chop</keyphrase>
+            <keyphrase>cut</keyphrase>
+            <keyphrase>cut down</keyphrase>
+        </triggers>
+        <subjects>
+            <entity>tree</entity>
+            <entity>axe</entity>
+        </subjects>
+        <consumed>
+            <entity>tree</entity>
+        </consumed>
+        <produced>
+            <entity>log</entity>
+        </produced>
+        <narration>You cut down the tree with the axe</narration>
+    </gameAction>
+
+
+    <gameAction>
+        <triggers>
+            <keyphrase>cut down</keyphrase>
+        </triggers>
+        <subjects>
+            <entity>lumberjack</entity>
+            <entity>axe</entity>
+        </subjects>
+        <consumed>
+        </consumed>
+        <produced>
+        </produced>
+        <narration>You are unable to cut down the lumberjack,
+            because they are too burly</narration>
+    </gameAction>
+
+    <gameAction>
+        <triggers>
+            <keyphrase>drink</keyphrase>
+            <keyphrase>use</keyphrase>
+        </triggers>
+        <subjects>
+            <entity>potion</entity>
+        </subjects>
+        <consumed>
+            <entity>potion</entity>
+        </consumed>
+        <produced>
+            <entity>health</entity>
+        </produced>
+        <narration>You drink the potion and your health improves</narration>
+    </gameAction>
+
+    <gameAction>
+        <triggers>
+            <keyphrase>fight</keyphrase>
+            <keyphrase>hit</keyphrase>
+            <keyphrase>attack</keyphrase>
+        </triggers>
+        <subjects>
+            <entity>elf</entity>
+        </subjects>
+        <consumed>
+            <entity>health</entity>
+        </consumed>
+        <produced>
+        </produced>
+        <narration>You attack the elf, but he fights back and you lose some health</narration>
+    </gameAction>
+
+    <gameAction>
+        <triggers>
+            <keyphrase>grow seed</keyphrase>
+        </triggers>
+        <subjects>
+        </subjects>
+        <consumed>
+        </consumed>
+        <produced>
+            <entity>tree</entity>
+        </produced>
+        <narration>You grow a tree</narration>
+    </gameAction>
+
+    <gameAction>
+        <triggers>
+            <keyphrase>burn</keyphrase>
+        </triggers>
+        <subjects>
+            <entity>riverbank</entity>
+        </subjects>
+        <consumed>
+            <entity>clearing</entity>
+        </consumed>
+        <produced>
+        </produced>
+        <narration>You burn down the bridge</narration>
+    </gameAction>
+
+    <gameAction>
+        <triggers>
+            <keyphrase>flirt with</keyphrase>
+        </triggers>
+        <subjects>
+            <entity>lumberjack</entity>
+        </subjects>
+        <consumed>
+        </consumed>
+        <produced>
+        </produced>
+        <narration>they're into it</narration>
+    </gameAction>
+
+    <gameAction>
+        <triggers>
+            <keyphrase>sing</keyphrase>
+            <keyphrase>make music</keyphrase>
+        </triggers>
+        <subjects>
+        </subjects>
+        <consumed>
+        </consumed>
+        <produced>
+        </produced>
+        <narration>You sing a sweet song</narration>
+    </gameAction>
+
+    <gameAction>
+        <triggers>
+            <keyphrase>make music</keyphrase>
+        </triggers>
+        <subjects>
+        </subjects>
+        <consumed>
+        </consumed>
+        <produced>
+        </produced>
+        <narration>You hum a catchy tune</narration>
+    </gameAction>
+
+
+    <gameAction>
+        <triggers>
+            <keyphrase>random</keyphrase>
+        </triggers>
+        <subjects>
+        </subjects>
+        <consumed>
+        </consumed>
+        <produced>
+        </produced>
+        <narration>You swap the feet that you are wearing your shoes
+        on</narration>
+    </gameAction>
+
+
+    <gameAction>
+        <triggers>
+            <keyphrase>random</keyphrase>
+        </triggers>
+        <subjects>
+        </subjects>
+        <consumed>
+        </consumed>
+        <produced>
+        </produced>
+        <narration>you eat a stick of lip salve</narration>
+    </gameAction>
+
+    <gameAction>
+        <triggers>
+            <keyphrase>pay</keyphrase>
+        </triggers>
+        <subjects>
+            <entity>elf</entity>
+            <entity>coin</entity>
+        </subjects>
+        <consumed>
+            <entity>coin</entity>
+        </consumed>
+        <produced>
+            <entity>shovel</entity>
+        </produced>
+        <narration>You pay the elf your silver coin and he produces a shovel</narration>
+    </gameAction>
+
+    <gameAction>
+        <triggers>
+            <keyphrase>bridge</keyphrase>
+        </triggers>
+        <subjects>
+            <entity>log</entity>
+            <entity>river</entity>
+        </subjects>
+        <consumed>
+            <entity>log</entity>
+        </consumed>
+        <produced>
+            <entity>clearing</entity>
+        </produced>
+        <narration>You bridge the river with the log and can now reach the other side</narration>
+    </gameAction>
+
+    <gameAction>
+        <triggers>
+            <keyphrase>dig</keyphrase>
+        </triggers>
+        <subjects>
+            <entity>ground</entity>
+            <entity>shovel</entity>
+        </subjects>
+        <consumed>
+            <entity>ground</entity>
+        </consumed>
+        <produced>
+            <entity>hole</entity>
+            <entity>gold</entity>
+        </produced>
+        <narration>You dig into the soft ground and unearth a pot of gold !!!</narration>
+    </gameAction>
+
+    <gameAction>
+        <triggers>
+            <keyphrase>blow</keyphrase>
+            <keyphrase>use</keyphrase>
+        </triggers>
+        <subjects>
+            <entity>horn</entity>
+        </subjects>
+        <consumed>
+        </consumed>
+        <produced>
+            <entity>lumberjack</entity>
+        </produced>
+        <narration>You blow the horn and as if by magic, a lumberjack appears !</narration>
+    </gameAction>
+
+    <gameAction>
+        <triggers>
+            <keyphrase>pointless</keyphrase>
+        </triggers>
+        <subjects>
+        </subjects>
+        <consumed>
+            <entity>potion</entity>
+        </consumed>
+        <produced>
+        </produced>
+        <narration>You blow the horn and as if by magic, a lumberjack appears !</narration>
+    </gameAction>
+
+    <gameAction>
+        <triggers>
+            <keyphrase>boomerang</keyphrase>
+        </triggers>
+        <subjects>
+            <entity>boomerang</entity>
+        </subjects>
+        <consumed>
+        </consumed>
+        <produced>
+        </produced>
+        <narration>This shouldn't be possible</narration>
+    </gameAction>
+
+    <gameAction>
+        <triggers>
+            <keyphrase>bottle</keyphrase>
+        </triggers>
+        <subjects>
+        </subjects>
+        <consumed>
+            <entity>bottle</entity>
+        </consumed>
+        <produced>
+        </produced>
+        <narration>This shouldn't be possible</narration>
+    </gameAction>
+
+    <gameAction>
+        <triggers>
+            <keyphrase>MacBook</keyphrase>
+        </triggers>
+        <subjects>
+            <entity>MacBook</entity>
+        </subjects>
+        <consumed>
+        </consumed>
+        <produced>
+        </produced>
+        <narration>This shouldn't be possible</narration>
+    </gameAction>
+
+</actions>

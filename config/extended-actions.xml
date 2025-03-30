@@ -137,4 +137,19 @@
         <narration>You blow the horn and as if by magic, a lumberjack appears !</narration>
     </action>
 
+    <action>
+        <triggers>
+            <keyphrase>tap</keyphrase>
+        </triggers>
+        <subjects>
+            <entity>horn</entity>
+        </subjects>
+        <consumed>
+            <entity>lumberjack</entity>
+        </consumed>
+        <produced>
+        </produced>
+        <narration>You tap the horn and as if by magic, lumberjack disappears !</narration>
+    </action>
+
 </actions>
