@@ -692,6 +692,14 @@ public final class GameServer {
                     gamePlayer.removeAllArtefacts();
                     //respawn
                     gamePlayer.checkHealthAndRespawn(playersStartLocation);
+                    GameLocation startLocation = gameLocations.get(playersStartLocation);
+                    if(startLocation != null) {
+                        startLocation.addPlayer(gamePlayer.getName());
+                    }
+                    StringBuilder message = new StringBuilder();
+                    message.append(gamePlayer.getName());
+                    message.append(" died because of this action and has respawned at the start location");
+                    return message.toString();
                 }
             }
             // see if the item is present in player's inventory
