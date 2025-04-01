@@ -58,7 +58,7 @@ public class TestsOnBasicEntities {
     void validTest1() {
         //1
         String response = sendCommandToServer("shrirang: inventory");
-        assertEquals("shrirang has:\n", response,
+        assertEquals("shrirang has:" + System.lineSeparator(), response,
                 "calling 'inv' with an empty inventory should report back an " +
                         "empty inventory");
         response = sendCommandToServer("shrirang: look");
@@ -223,7 +223,7 @@ public class TestsOnBasicEntities {
     @Test
     void validTest2() {
         String response = sendCommandToServer("Shrirang:inv or Inv or inventory or Inventory");
-        assertEquals("Shrirang has:\n", response,
+        assertEquals("Shrirang has:" + System.lineSeparator(), response,
                 "calling 'inv' with an empty inventory should report back an " +
                         "empty inventory");
     }
