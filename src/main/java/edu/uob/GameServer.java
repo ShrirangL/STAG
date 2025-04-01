@@ -272,7 +272,7 @@ public final class GameServer {
         }
         input = input.trim();
         if(input.equalsIgnoreCase("gamestate")) {
-            return printGameState();
+            return this.printGameState();
         }
         StringBuilder command = new StringBuilder(input.toLowerCase());
 
@@ -549,34 +549,34 @@ public final class GameServer {
             throw new RuntimeException("Health command requires does not require location");
         }
         StringBuilder ret = new StringBuilder();
-        ret.append(gamePlayer.getName()).append("'s health is: ").append(gamePlayer.getHealth()).append("\n");
+        ret.append(gamePlayer.getName()).append("'s health is: ").append(gamePlayer.getHealth()).append(System.lineSeparator());
         return ret.toString();
     }
 
     private String getPlayerPerspective(GamePlayer gamePlayer) {
         GameLocation gameLocation = gameLocations.get(gamePlayer.getLocation());
         StringBuilder stringBuilder = new StringBuilder();
-        stringBuilder.append("You are in ").append(gameLocation.getLocationDescription()).append(":\n");
-        stringBuilder.append("You can see:").append("\n");
+        stringBuilder.append("You are in ").append(gameLocation.getLocationDescription()).append(System.lineSeparator());
+        stringBuilder.append("You can see:").append(System.lineSeparator());
         //iterate through characters, artefacts, furniture
         for (GameCharacter character : gameLocation.getCharacters()) {
-            stringBuilder.append(character.getName()).append(": ").append(character.getDescription()).append("\n");
+            stringBuilder.append(character.getName()).append(": ").append(character.getDescription()).append(System.lineSeparator());
         }
         for (GameArtefact gameArtefact : gameLocation.getArtefacts()) {
-            stringBuilder.append(gameArtefact.getName()).append(": ").append(gameArtefact.getDescription()).append("\n");
+            stringBuilder.append(gameArtefact.getName()).append(": ").append(gameArtefact.getDescription()).append(System.lineSeparator());
         }
         for (GameFurniture furniture : gameLocation.getFurnitures()) {
-            stringBuilder.append(furniture.getName()).append(": ").append(furniture.getDescription()).append("\n");
+            stringBuilder.append(furniture.getName()).append(": ").append(furniture.getDescription()).append(System.lineSeparator());
         }
         for (String player : gameLocation.getPlayers()) {
             if(!gamePlayer.getName().equalsIgnoreCase(player)) {
-                stringBuilder.append("Player :").append(player).append("\n");
+                stringBuilder.append("Player :").append(player).append(System.lineSeparator());
             }
         }
-        stringBuilder.append("You can access from here:").append("\n");
+        stringBuilder.append("You can access from here:").append(System.lineSeparator());
         HashSet<String> gPaths = gamePaths.get(gamePlayer.getLocation());
         for (String path : gPaths) {
-            stringBuilder.append(path).append("\n");
+            stringBuilder.append(path).append(System.lineSeparator());
         }
         return stringBuilder.toString();
     }
@@ -770,12 +770,12 @@ public final class GameServer {
                     message.append(player).append(",");
                 }
             }
-            message.append("\n");
+            message.append(System.lineSeparator());
         }
-        message.append("Paths:").append("\n");
+        message.append("Paths:").append(System.lineSeparator());
         for(String source : gamePaths.keySet()) {
             for(String destination : gamePaths.get(source)){
-                message.append(source).append("-->").append(destination).append("\n");
+                message.append(source).append("-->").append(destination).append(System.lineSeparator());
             }
         }
 

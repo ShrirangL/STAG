@@ -21,7 +21,7 @@ final class EntitiesFileTests {
   void testBasicEntitiesFileIsReadable() {
       try {
           Parser parser = new Parser();
-          FileReader reader = new FileReader("config" + File.separator + "basic-entities.dot");
+          FileReader reader = new FileReader("config" + File.separator + "extended-entities.dot");
           parser.parse(reader);
           Graph wholeDocument = parser.getGraphs().get(0);
           ArrayList<Graph> sections = wholeDocument.getSubgraphs();
