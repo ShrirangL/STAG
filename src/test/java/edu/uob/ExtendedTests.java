@@ -197,7 +197,7 @@ class ExtendedTests {
         sendCommandToServer("test: hit elf");
         sendCommandToServer("test: hit elf");
         final String response14 = sendCommandToServer("test: inv");
-        assertEquals("test has:\n", response14,
+        assertEquals("test has:" + System.lineSeparator(), response14,
             "normal play-through of game should behave as expected");
     }
     
