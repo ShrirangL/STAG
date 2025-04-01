@@ -74,12 +74,12 @@ public final class GameServer {
     }
 
     /**
-    * Do not change the following method signature or we won't be able to mark your submission
-    * Instanciates a new server instance, specifying a game with some configuration files
-    *
-    * @param entitiesFile The game configuration file containing all game entities to use in your game
-    * @param actionsFile The game configuration file containing all game actions to use in your game
-    */
+     * Do not change the following method signature or we won't be able to mark your submission
+     * Instanciates a new server instance, specifying a game with some configuration files
+     *
+     * @param entitiesFile The game configuration file containing all game entities to use in your game
+     * @param actionsFile The game configuration file containing all game actions to use in your game
+     */
     public GameServer(File entitiesFile, File actionsFile) {
         // TODO implement your server logic here
         gameActions = new HashMap<>();
@@ -231,11 +231,11 @@ public final class GameServer {
     }
 
     /**
-    * Do not change the following method signature or we won't be able to mark your submission
-    * This method handles all incoming game commands and carries out the corresponding actions.</p>
-    *
-    * @param command The incoming command to be processed
-    */
+     * Do not change the following method signature or we won't be able to mark your submission
+     * This method handles all incoming game commands and carries out the corresponding actions.</p>
+     *
+     * @param command The incoming command to be processed
+     */
     public String handleCommand(String command) {
         // TODO implement your server logic here
         // Handle standard built in commands first;
@@ -274,175 +274,127 @@ public final class GameServer {
         if(input.equalsIgnoreCase("gamestate")) {
             return this.printGameState();
         }
-        StringBuilder command = new StringBuilder(input.toLowerCase());
+        StringBuilder command = new StringBuilder(input);
 
-        // Keep iterating through the input string and check if a trigger or subject has matches in the input
-        LinkedList<String> words = new LinkedList<String>();
+        HashSet<String> triggers = new HashSet<String>();
+        compileListOfKeywordsFromCommand(command, triggers, availableTriggers);
+        HashSet<String> subjects = new HashSet<>();
+        compileListOfKeywordsFromCommand(command, subjects, availableSubjects);
 
-        HashSet<String> triggersAndSubjects = new HashSet<>();
-        triggersAndSubjects.addAll(availableTriggers);
-        triggersAndSubjects.addAll(availableSubjects);
-        for(String triggerOrSubject : triggersAndSubjects){
+        if (triggers.isEmpty()) {
+            throw new RuntimeException("No action found");
+        }
+
+        String trigger = triggers.iterator().next();
+        switch (trigger) {
+            case "inv":
+            case "inventory":
+                return this.parseActionInventory(gamePlayer, triggers, subjects);
+            case "get":
+                return this.parseActionGet(gamePlayer, triggers, subjects);
+            case "drop":
+                return this.parseActionDrop(gamePlayer, triggers, subjects);
+            case "goto":
+                return this.parseActionGoto(gamePlayer, triggers, subjects);
+            case "look":
+                return this.parseActionLook(gamePlayer, triggers, subjects);
+            case "health":
+                return this.parseActionHealth(gamePlayer, triggers, subjects);
+            default:
+                return this.parseComplexAction(gamePlayer, triggers, subjects);
+        }
+    }
+
+    private void compileListOfKeywordsFromCommand(StringBuilder command, HashSet<String> foundKeywords, HashSet<String> availableKeywords) {
+        for(String keyword : availableKeywords){
             StringBuilder patternString = new StringBuilder();
-            patternString.append("\\b").append(triggerOrSubject).append("\\b");
-
+            patternString.append("\\b").append(keyword).append("\\b");
             Pattern pattern = Pattern.compile(patternString.toString(), Pattern.CASE_INSENSITIVE);
             Matcher matcher = pattern.matcher(command);
 
             while (matcher.find()) {
-                words.add(triggerOrSubject);
+                foundKeywords.add(keyword);
                 command.delete(matcher.start(), matcher.end());
                 matcher = pattern.matcher(command);
             }
         }
-
-        if (words.isEmpty()) {
-            throw new RuntimeException("No action found");
-        }
-
-        String trigger = this.doesCommmandContainTrigger(words);
-
-        switch (trigger) {
-            case "inv":
-            case "inventory":
-                return this.parseActionInventory(gamePlayer, words);
-            case "get":
-                return this.parseActionGet(gamePlayer, words);
-            case "drop":
-                return this.parseActionDrop(gamePlayer, words);
-            case "goto":
-                return this.parseActionGoto(gamePlayer, words);
-            case "look":
-                return this.parseActionLook(gamePlayer, words);
-            case "health":
-                return this.parseActionHealth(gamePlayer, words);
-            default:
-                return this.parseComplexAction(gamePlayer, words);
-        }
     }
 
-    private String doesCommmandContainTrigger(LinkedList<String> words) {
-        for(String word : words) {
-            if(availableTriggers.stream().map(String::toLowerCase).collect(Collectors.toSet()).contains(word.toLowerCase())) {
-                return word;
-            }
-        }
-        return "";
-    }
-
-    private String doesCommandContainSubject(LinkedList<String> words) {
-        for(String word : words) {
-            if(availableSubjects.stream()
-                    .map(String::toLowerCase)
-                    .collect(Collectors.toSet())
-                    .contains(word.toLowerCase())) {
-                return word;
-            }
-        }
-        return "";
-    }
-
-    private String doesCommandContainLocation(LinkedList<String> words) {
-        for (String word : words ) {
-            if(gameLocations.keySet().stream()
-                    .map(String::toLowerCase)
-                    .collect(Collectors.toSet())
-                    .contains(word.toLowerCase())) {
-                return word;
-            }
-        }
-        return "";
-    }
-
-    private boolean doesCommandContainTriggerExcept(LinkedList<String> words, String... exceptions) {
-        //copy available command and remove the exception
-        HashSet<String> copyOfAvailableTriggers = new HashSet<>(availableTriggers);
-        for(String exception : exceptions) {
-            Iterator<String> iterator = copyOfAvailableTriggers.iterator();
-            while (iterator.hasNext()) {
-                if (iterator.next().equalsIgnoreCase(exception)) {
-                    iterator.remove();
+    private boolean doesContainWordsExcept(HashSet<String> words, HashSet<String> exceptions) {
+        for (String word : words) {
+            boolean found = false;
+            for (String exception : exceptions) {
+                if (word.equalsIgnoreCase(exception)) {
+                    found = true;
+                    break;
                 }
             }
-        }
-        for(String word : words) {
-            if(copyOfAvailableTriggers.stream()
-                    .map(String::toLowerCase)
-                    .collect(Collectors.toSet())
-                    .contains(word.toLowerCase())) {
+            if (!found) {
                 return true;
             }
         }
         return false;
     }
 
-    private boolean doesCommandContainSubjectsExcept(LinkedList<String> words, String... exceptions) {
-        HashSet<String> copyOfAvailableSubjects = new HashSet<>(availableSubjects);
-        for(String exception : exceptions) {
-            Iterator<String> iterator = copyOfAvailableSubjects.iterator();
-            while (iterator.hasNext()) {
-                if (iterator.next().equalsIgnoreCase(exception)) {
-                    iterator.remove();
-                }
-            }
-        }
-        for(String word : words) {
-            if(copyOfAvailableSubjects.stream()
-                    .map(String::toLowerCase)
-                    .collect(Collectors.toSet()).contains(word.toLowerCase())) {
+    private boolean isThisSubjectLocation(String subject) {
+        for(String location : gameLocations.keySet()) {
+            if(location.equalsIgnoreCase(subject)) {
                 return true;
             }
         }
         return false;
     }
 
-    private boolean doesCommandContainLocationExcept(LinkedList<String> words, String... exceptions) {
-        HashSet<String> copyOfAvailableLocations = new HashSet<>(gameLocations.keySet());
-        for(String exception : exceptions) {
-            Iterator<String> iterator = copyOfAvailableLocations.iterator();
-            while (iterator.hasNext()) {
-                if (iterator.next().equalsIgnoreCase(exception)) {
-                    iterator.remove();
-                }
+    private boolean doesPathExistBetween(String from, String to) {
+        GameLocation start = null;
+        for(String location : gameLocations.keySet()) {
+            if(location.equalsIgnoreCase(from)) {
+                start = gameLocations.get(location);
             }
         }
-        for(String word : words) {
-            if(copyOfAvailableLocations.stream()
-                    .map(String::toLowerCase)
-                    .collect(Collectors.toSet()).contains(word.toLowerCase())) {
+
+        if(start == null) {
+            throw new RuntimeException("Invalid start location");
+        }
+
+        for(String destination : gamePaths.get(start.getLocationName())) {
+            if(destination.equalsIgnoreCase(to)) {
                 return true;
             }
         }
         return false;
     }
 
-    private String parseActionInventory(GamePlayer gameplayer, LinkedList<String> words) {
+    private String parseActionInventory(GamePlayer gameplayer, HashSet<String> triggers, HashSet<String> subjects) {
         //  for inventory, we only need word inventory no extra built-in
         //  trigger or subjects should be present
 
-        if(!this.doesCommandContainSubject(words).isEmpty()) {
+        if(!subjects.isEmpty()) {
             throw new RuntimeException("Subject not allowed in command");
         }
-        if(this.doesCommandContainTriggerExcept(words, "inv", "inventory")) {
+
+        if(this.doesContainWordsExcept(triggers, new HashSet<String> (Set.of("inv", "inventory")))) {
             throw new RuntimeException("Multiple triggers now allowed in command");
         }
         return gameplayer.showInventory();
     }
 
-    private String parseActionGet(GamePlayer gamePlayer, LinkedList<String> words) {
-        if(this.doesCommandContainTriggerExcept(words, "get")) {
+    private String parseActionGet(GamePlayer gamePlayer, HashSet<String> triggers, HashSet<String> subjects) {
+        if(this.doesContainWordsExcept(triggers, new HashSet<String>(Set.of("get")))) {
             throw new RuntimeException("Multiple triggers not allowed in get command");
         }
 
-        String subject = this.doesCommandContainSubject(words);
-        if(subject.isEmpty()) {
+        if(subjects.isEmpty()) {
             throw new RuntimeException("Get command requires a subjects");
-        }
-
-        if(this.doesCommandContainSubjectsExcept(words, subject)) {
+        } else if(subjects.size() > 1) {
             throw new RuntimeException("Multiple subjects not allowed in get command");
         }
+
+        String subject = subjects.iterator().next();
         GameLocation gameLocation = gameLocations.get(gamePlayer.getLocation());
+        if(gameLocation == null) {
+            throw new RuntimeException("Invalid player location");
+        }
 
         // the subject should be artefact and should be present in the current location of the player
         if(!gameLocation.isArtefactPresent(subject)) {
@@ -458,21 +410,25 @@ public final class GameServer {
         return ret.toString();
     }
 
-    private String parseActionDrop(GamePlayer gamePlayer, LinkedList<String> words) {
-        if(this.doesCommandContainTriggerExcept(words, "drop")) {
+    private String parseActionDrop(GamePlayer gamePlayer, HashSet<String> triggers, HashSet<String> subjects) {
+        if(this.doesContainWordsExcept(triggers, new HashSet<String>(Set.of("drop")))) {
             throw new RuntimeException("Multiple triggers not allowed in drop command");
         }
 
-        String subject = this.doesCommandContainSubject(words);
-        if(subject.isEmpty()) {
+        if(subjects.isEmpty()) {
             throw new RuntimeException("drop command requires a subjects");
         }
-        if(this.doesCommandContainSubjectsExcept(words, subject)) {
+        else if(subjects.size() > 1) {
             throw new RuntimeException("Multiple subjects not allowed in drop command");
         }
-        GameLocation gameLocation = gameLocations.get(gamePlayer.getLocation());
 
-        // the subject should be artefact and should be present in the current location of the player
+        GameLocation gameLocation = gameLocations.get(gamePlayer.getLocation());
+        if(gameLocation == null) {
+            throw new RuntimeException("Invalid player location");
+        }
+
+        String subject = subjects.iterator().next();
+        // the subject should be artefact and should be present in player's inventory
         if(!gamePlayer.isArtefactPresent(subject)) {
             throw new RuntimeException("Artefact could not be found in player's inventory");
         }
@@ -484,70 +440,63 @@ public final class GameServer {
         return ret.toString();
     }
 
-    private String parseActionGoto(GamePlayer gamePlayer, LinkedList<String> words) {
-        if(this.doesCommandContainTriggerExcept(words, "goto")) {
+    private String parseActionGoto(GamePlayer gamePlayer, HashSet<String> triggers, HashSet<String> subjects) {
+        if(this.doesContainWordsExcept(triggers, new HashSet<String> (Set.of("goto")))) {
             throw new RuntimeException("Multiple triggers not allowed in goto command");
         }
 
-        String subject = this.doesCommandContainSubject(words);
-        if(subject.isEmpty()) {
+        if(subjects.isEmpty()) {
             throw new RuntimeException("Goto command requires a subjects");
-        }
-        if(this.doesCommandContainSubjectsExcept(words, subject)) {
+        } else if(subjects.size() > 1) {
             throw new RuntimeException("Multiple subjects not allowed in goto command");
         }
 
-        String newLocationName = this.doesCommandContainLocation(words);
-        if(newLocationName.isEmpty()) {
-            throw new RuntimeException("Goto command requires a destination location");
-        }
-        if(this.doesCommandContainLocationExcept(words, newLocationName)) {
-            throw new RuntimeException("Multiple locations not allowed in goto command");
+        String newLocationName = subjects.iterator().next();
+
+        if(!this.isThisSubjectLocation(newLocationName)) {
+            throw new RuntimeException("Goto command must have a valid location");
         }
 
         if(newLocationName.equalsIgnoreCase(gamePlayer.getLocation())) {
             throw new RuntimeException("You are already at this location");
         }
-            // see if there is a path from current location to the destination
-            if (!gamePaths.get(gamePlayer.getLocation()).stream()
-                    .map(String::toLowerCase)
-                    .collect(Collectors.toSet()).contains(newLocationName.toLowerCase())) {
-                throw new RuntimeException("Location is not accessible from current location of the player");
-            }
+
+        // see if there is a path from current location to the destination
+        if (!this.doesPathExistBetween(gamePlayer.getLocation(), newLocationName)) {
+            throw new RuntimeException("Location is not accessible from current location of the player");
+        }
 
         GameLocation oldLocation = gameLocations.get(gamePlayer.getLocation());
-        oldLocation.removePlayer(gamePlayer.getName());
         GameLocation newLocation = gameLocations.get(newLocationName);
+
         newLocation.addPlayer(gamePlayer.getName());
         gamePlayer.setLocation(newLocationName);
+        oldLocation.removePlayer(gamePlayer.getName());
+
         return this.getPlayerPerspective(gamePlayer);
     }
 
-    private String parseActionLook(GamePlayer gamePlayer, LinkedList<String> words) {
+    private String parseActionLook(GamePlayer gamePlayer, HashSet<String> triggers, HashSet<String> subjects) {
         // no other trigger, no subjects and no location is required
-        if(this.doesCommandContainTriggerExcept(words, "look")) {
+        if(this.doesContainWordsExcept(triggers, new HashSet<String>(Set.of("look")))) {
             throw new RuntimeException("Multiple triggers not allowed in look command");
         }
-        if(!this.doesCommandContainSubject(words).isEmpty()) {
+        if(!subjects.isEmpty()) {
             throw new RuntimeException("Look command requires does not require subjects");
         }
-        if(!this.doesCommandContainLocation(words).isEmpty()) {
-            throw new RuntimeException("Look command requires does not require location");
-        }
+
         return this.getPlayerPerspective(gamePlayer);
     }
 
-    private String parseActionHealth(GamePlayer gamePlayer, LinkedList<String> words) {
+    private String parseActionHealth(GamePlayer gamePlayer, HashSet<String> triggers, HashSet<String> subjects) {
         // no other trigger, no subjects and no location is required
-        if(this.doesCommandContainTriggerExcept(words, "health")) {
+        if(this.doesContainWordsExcept(triggers, new HashSet<String> (Set.of("health")))) {
             throw new RuntimeException("Multiple triggers not allowed in health command");
         }
-        if(!doesCommandContainSubject(words).isEmpty()) {
+        if(!subjects.isEmpty()) {
             throw new RuntimeException("Health command requires does not require subjects");
         }
-        if(!doesCommandContainLocation(words).isEmpty()) {
-            throw new RuntimeException("Health command requires does not require location");
-        }
+
         StringBuilder ret = new StringBuilder();
         ret.append(gamePlayer.getName()).append("'s health is: ").append(gamePlayer.getHealth()).append(System.lineSeparator());
         return ret.toString();
@@ -581,27 +530,31 @@ public final class GameServer {
         return stringBuilder.toString();
     }
 
-    private String parseComplexAction(GamePlayer gamePlayer, LinkedList<String> wordList) {
+    private String parseComplexAction(GamePlayer gamePlayer, HashSet<String> triggers, HashSet<String> subjects) {
         GameLocation gameLocation = gameLocations.get(gamePlayer.getLocation());
-        HashSet<String> commandTriggers = new HashSet<>();
 
-        for(String word : wordList) {
-            if(availableTriggers.stream()
-                    .map(String::toLowerCase)
-                    .collect(Collectors.toSet()).contains(word.toLowerCase())) {
-                commandTriggers.add(word);
-            }
-        }
+        GameAction commandAction = this.isCommandValid(triggers, subjects);
+        //See if we can act on valid query
+        this.isActionPerformable(commandAction, gamePlayer, gameLocation);
 
+        //Act on the query/command
+        this.produceEntity(commandAction, gamePlayer, gameLocation);
+        this.consumeEntity(commandAction, gamePlayer, gameLocation);
+
+        //Print the narration of the action
+        return commandAction.getNarration();
+    }
+
+    private GameAction isCommandValid(HashSet<String> triggers, HashSet<String> subjects) {
         GameAction commandAction  = null; // Action to be performed
         // if command triggers is empty throw error
-        if(commandTriggers.isEmpty()) {
+        if(triggers.isEmpty()) {
             throw new RuntimeException("No command triggers in action ");
         }
 
         HashSet<GameAction> validActions = new HashSet<GameAction>();
         HashSet<GameAction> possibleActions = new HashSet<GameAction>();
-        for(String commandTrigger : commandTriggers) {
+        for(String commandTrigger : triggers) {
             possibleActions.addAll(gameActions.get(commandTrigger));
         }
 
@@ -609,13 +562,10 @@ public final class GameServer {
         // there should be no other subjects from a different action
         for (GameAction action : possibleActions) {
             // compile a list of subjects for this action
-            HashSet<String> foundSubjects = new HashSet<>();
             Iterator<String> itr = action.getSubjects().iterator();
             while (itr.hasNext()) {
                 String subject = itr.next();
-                if (wordList.stream()
-                        .map(String::toLowerCase)
-                        .collect(Collectors.toSet()).contains(subject.toLowerCase())) {
+                if (subjects.contains(subject)) {
                     validActions.add(action);
                     break;
                 }
@@ -628,15 +578,14 @@ public final class GameServer {
         commandAction = validActions.iterator().next();
 
         //Ensure that the command does not contain subjects other than the ones required to perform this action
-        HashSet<String> subjects = new HashSet<>(commandAction.getSubjects());
-        for(String word : wordList){
-            if(availableSubjects.stream().map(String::toLowerCase).collect(Collectors.toSet()).contains(word.toLowerCase())
-                    && !subjects.stream().map(String::toLowerCase).collect(Collectors.toSet()).contains(word.toLowerCase())) {
-                throw new RuntimeException("All the subjects should be from exactly one action");
-            }
+        if(this.doesContainWordsExcept(subjects, commandAction.getSubjects())) {
+            throw new RuntimeException("All the subjects should be from exactly one action");
         }
 
-        //See if we can act on valid query
+        return commandAction;
+    }
+
+    private void isActionPerformable(GameAction commandAction, GamePlayer gamePlayer, GameLocation gameLocation) {
         //We should now check if all the subject required to perform the actions are either possessed by player or in the room.
         // If even a single subject is unavailable throw exception.
         HashSet<String> availableEntities = new HashSet<>();
@@ -651,8 +600,9 @@ public final class GameServer {
                 throw new RuntimeException("Subject(s) required to execute action are missing");
             }
         }
+    }
 
-        //Act on the query/command
+    private void produceEntity(GameAction commandAction, GamePlayer gamePlayer, GameLocation gameLocation) {
         // produced item is moved from store room to current location
         HashSet<String> produced = commandAction.getProduced();
         for(String item : produced) {
@@ -678,7 +628,9 @@ public final class GameServer {
                 }
             }
         }
+    }
 
+    private void consumeEntity( GameAction commandAction, GamePlayer gamePlayer, GameLocation gameLocation) {
         //Delete the consumed item from where it was located (either player's inventory or room)
         // and place it in storeroom.
         HashSet<String> consumed = commandAction.getConsumed();
@@ -699,7 +651,7 @@ public final class GameServer {
                     StringBuilder message = new StringBuilder();
                     message.append(gamePlayer.getName());
                     message.append(" died because of this action and has respawned at the start location");
-                    return message.toString();
+                    throw new RuntimeException(message.toString());
                 }
             }
             // see if the item is present in player's inventory
@@ -732,9 +684,6 @@ public final class GameServer {
                 }
             }
         }
-
-        //Print the narration of the action
-        return commandAction.getNarration();
     }
 
     private String printGameState(){
@@ -783,17 +732,17 @@ public final class GameServer {
     }
 
     /**
-    * Do not change the following method signature, or we won't be able to mark your submission
-    * Starts a *blocking* socket server listening for new connections.
-    *
-    * @param portNumber The port to listen on.
-    * @throws IOException If any IO related operation fails.
-    */
+     * Do not change the following method signature, or we won't be able to mark your submission
+     * Starts a *blocking* socket server listening for new connections.
+     *
+     * @param portNumber The port to listen on.
+     * @throws IOException If any IO related operation fails.
+     */
     public void blockingListenOn(int portNumber) throws IOException {
         try (ServerSocket s = new ServerSocket(portNumber)) {
             StringBuilder message = new StringBuilder();
             message.append("Server listening on port ").append(portNumber);
-            System.out.println(message.toString());
+            System.out.println(message);
             while (!Thread.interrupted()) {
                 try {
                     this.blockingHandleConnection(s);
@@ -805,16 +754,16 @@ public final class GameServer {
     }
 
     /**
-    * Do not change the following method signature or we won't be able to mark your submission
-    * Handles an incoming connection from the socket server.
-    *
-    * @param serverSocket The client socket to read/write from.
-    * @throws IOException If any IO related operation fails.
-    */
+     * Do not change the following method signature or we won't be able to mark your submission
+     * Handles an incoming connection from the socket server.
+     *
+     * @param serverSocket The client socket to read/write from.
+     * @throws IOException If any IO related operation fails.
+     */
     private void blockingHandleConnection(ServerSocket serverSocket) throws IOException {
         try (Socket s = serverSocket.accept();
-        BufferedReader reader = new BufferedReader(new InputStreamReader(s.getInputStream()));
-        BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(s.getOutputStream()))) {
+             BufferedReader reader = new BufferedReader(new InputStreamReader(s.getInputStream()));
+             BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(s.getOutputStream()))) {
             System.out.println("Connection established");
             String incomingCommand = reader.readLine();
             if(incomingCommand != null) {
