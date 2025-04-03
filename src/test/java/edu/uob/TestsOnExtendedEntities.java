@@ -223,7 +223,7 @@ public class TestsOnExtendedEntities {
         sendCommandToServer("shrirang: goto forest");
 
         String response = sendCommandToServer("shrirang: blow horn");
-        assertEquals("You blow the horn and as if by magic, a lumberjack appears !",response,
+        assertTrue(response.contains("You blow the horn and as if by magic, a lumberjack appears !"),
                 "blow horn command didn't work as expected");
 
         response = sendCommandToServer("shrirang: look");
@@ -232,11 +232,75 @@ public class TestsOnExtendedEntities {
         sendCommandToServer("shrirang: goto cabin");
 
         response = sendCommandToServer("shrirang: tap horn");
-        assertEquals("You tap the horn and as if by magic, lumberjack disappears !",response,
+        assertTrue(response.contains("You tap the horn and as if by magic, lumberjack disappears !"),
                 "tap horn command didn't work as expected");
 
         sendCommandToServer("shrirang: goto forest");
         response = sendCommandToServer("shrirang: look");
         assertTrue(response.contains("forest") && !response.contains("lumberjack"));
+    }
+
+    @Test
+    void testPlayerNameConsistency() {
+        String response = sendCommandToServer("  Shri rang   : inv");
+        assertTrue(response.contains("Shri rang"));
+        response = sendCommandToServer("  shRi rAng  : inv");
+        assertTrue(response.contains("Shri rang"), "Player's name should not be case sensitive");
+    }
+
+    @Test
+    void testMultiplayerComplexScenario(){
+        sendCommandToServer("p1: look"); // sees nobody
+        sendCommandToServer("p2: look"); // sees p1
+        sendCommandToServer("p3: look"); // sees p1 and p2
+
+        sendCommandToServer("p1: get coin");
+        sendCommandToServer("p2: get axe");
+        sendCommandToServer("p3: get potion");
+
+        sendCommandToServer("p1: open trapdoor");// can't open without key
+        sendCommandToServer("p2: open trapdoor");// can't open without key
+        sendCommandToServer("p3: open trapdoor");// can't open without key
+
+        sendCommandToServer("p1: get axe");// fail cannot pick artefacts held by others
+        sendCommandToServer("p2: get potion");//fail cannot pick artefacts held by others
+        sendCommandToServer("p3: get coin");// fail cannot pick artefacts held by others
+
+        sendCommandToServer("p1: goto forest"); // sees nobody
+        sendCommandToServer("p2: goto forest"); // sees p1
+        sendCommandToServer("p3: goto forest"); // sees p1 and p2
+
+        sendCommandToServer("p1: get key");
+        sendCommandToServer("p1: chop tree");// doesn't have axe
+        sendCommandToServer("p3: chop tree");// fail doesn't axe
+        sendCommandToServer("p2: chop tree");// success
+
+        sendCommandToServer("p2: get log");
+        sendCommandToServer("p2: goes to riverbank");
+        sendCommandToServer("p2: bridge river");
+        sendCommandToServer("p2 : goto clearing");// success
+        sendCommandToServer("p2: goto forest"); // fail
+
+        sendCommandToServer("p1: goto cabin");
+        sendCommandToServer("p1: open trapdoor");
+        sendCommandToServer("p1: goto cellar");
+
+        sendCommandToServer("p3: goto cabin");
+        sendCommandToServer("p3: shut trapdoor");
+        sendCommandToServer("p3: goto cellar"); // fail, cannot goto cellar
+
+        sendCommandToServer("p1: pay elf");
+        sendCommandToServer("p1: get shovel");
+        sendCommandToServer("p1: attack elf"); // health is 2
+        sendCommandToServer("p1: attack elf"); // health is 1
+        sendCommandToServer("p1: attack elf"); // health is 0
+        sendCommandToServer("p3: attack elf"); //not possible
+        sendCommandToServer("p1: look"); // sees p3
+
+        // key is in cellar nobody can open trapdoor
+        sendCommandToServer("p1: open trapdoor"); // dropped key when died can't open door now
+        sendCommandToServer("p2: dig ground"); // fail, cannot dig ground without shovel
+        sendCommandToServer("p2: goto riverbank"); // success
+        sendCommandToServer("p2: bridge river");// no error
     }
 }

@@ -13,22 +13,36 @@ public class GamePlayer extends GameEntity {
         health = 3;
     }
 
+    /**
+     * Retrieves health of a player
+     * @return player's health
+     */
     public Integer getHealth() {
         return health;
     }
 
+    /**
+     * Increments player's health if it is less than 3
+     */
     public void incrementHealth() {
         if(health < 3) {
             health++;
         }
     }
 
+    /**
+     * Decrements player's health if it is more than 0
+     */
     public void decrementHealth() {
         if(health > 0) {
             health--;
         }
     }
 
+    /**
+     * Check if player's health has reached zero and set it to new location with full health
+     * @param location
+     */
     public void checkHealthAndRespawn(String location) {
         if(health < 1) {
             health = 3;
@@ -36,11 +50,19 @@ public class GamePlayer extends GameEntity {
         setLocation(location);
     }
 
+    /**
+     * Adds an artefact to player's inventory
+     * @param item GameArtefact object
+     */
     public void addItem(GameArtefact item) {
         item.setLocation(name);
         artefacts.add(item);
     }
 
+    /**
+     * Removes an artefact from player's inventory
+     * @param artefactName name of artefact
+     */
     public void removeArtefact(String artefactName) {
         Iterator<GameArtefact> itererator = artefacts.iterator();
         while (itererator.hasNext()) {
@@ -51,10 +73,17 @@ public class GamePlayer extends GameEntity {
         }
     }
 
+    /**
+     * Empties a player's inventory
+     */
     public void removeAllArtefacts() {
         artefacts.clear();
     }
 
+    /**
+     * Retrieves list of names of artefacts in player's inventory
+     * @return Set of artefact names
+     */
     public HashSet<String> getArtefactNames() {
         HashSet<String> artefactNames = new HashSet<>();
         for (GameArtefact artefact : artefacts) {
@@ -63,10 +92,19 @@ public class GamePlayer extends GameEntity {
         return artefactNames;
     }
 
+    /**
+     * Retrieves set of GameArtefact objects in player's inventory
+     * @return Set of GameArtefact objects
+     */
     public HashSet<GameArtefact> getArtefacts() {
         return artefacts;
     }
 
+    /**
+     * Retrieves game artefact object corresponding to an artefact name
+     * @param artefactName name of artefact
+     * @return GameArtefact object
+     */
     public GameArtefact getArtefact(String artefactName) {
         for (GameArtefact artefact : artefacts) {
             if (artefact.getName().equalsIgnoreCase(artefactName)) {
@@ -76,6 +114,11 @@ public class GamePlayer extends GameEntity {
         return null;
     }
 
+    /**
+     * Checks if artefact is present in player's inventory
+     * @param artefactName name of artefact
+     * @return True if present else false
+     */
     public Boolean isArtefactPresent(String artefactName) {
         for (GameArtefact artefact : artefacts) {
             if (artefact.getName().equalsIgnoreCase(artefactName)) {
@@ -85,6 +128,10 @@ public class GamePlayer extends GameEntity {
         return false;
     }
 
+    /**
+     * Returns contents of player's inventory to user
+     * @return Text describing what is present in player's inventory
+     */
     public String showInventory() {
         StringBuilder stringBuilder = new StringBuilder();
         stringBuilder.append(name).append(" has:").append(System.lineSeparator());
