@@ -61,11 +61,11 @@ public class FileParser {
                 first = false;
             }
             GameLocation gameLocation = new GameLocation(locationName, locationDescription);
-            this.addEntitiesOfLocation(location, gameLocation, locationName);
+            this.parseEntitiesOfLocation(location, gameLocation, locationName);
             gameLocations.put(locationName, gameLocation);
         }
         this.ensureStoreroomExists(gameLocations);
-        this.populateGamePaths(sections.next().getEdges().iterator(), gamePaths);
+        this.parseGamePaths(sections.next().getEdges().iterator(), gamePaths);
     }
 
     /**
@@ -74,20 +74,16 @@ public class FileParser {
      * @param gameLocation Game location object to hold the retrieved data
      * @param locationName Name of the location to be provided to newly created entities to set their location
      */
-    private void addEntitiesOfLocation(Graph location, GameLocation gameLocation, String locationName) throws ParseException {
-        Iterator<Graph> entities = location.getSubgraphs().iterator();
+    private void parseEntitiesOfLocation(Graph location, GameLocation gameLocation, String locationName){
         // Iterate through all the entity categories inside a location
-        while (entities.hasNext()) {
-            Graph entity = entities.next();
+        for (Graph entity : location.getSubgraphs()) {
             String graphName = entity.getId().getId();
-            Iterator<Node> items = entity.getNodes(false).iterator();
-            while (items.hasNext()) {
-                Node item = items.next();
+            for (Node item : entity.getNodes(false)) {
                 String itemName = item.getId().getId();
                 String itemDescription = item.getAttribute("description");
-                switch (graphName){
+                switch (graphName) {
                     case "characters":
-                        gameLocation.addCharacter(new GameCharacter(itemName, itemDescription, locationName, -1));
+                        gameLocation.addCharacter(new GameCharacter(itemName, itemDescription, locationName));
                         break;
                     case "artefacts":
                         gameLocation.addArtefact(new GameArtefact(itemName, itemDescription, locationName));
@@ -105,7 +101,7 @@ public class FileParser {
      * @param paths Iterator to iterate over all the paths
      * @param gamePaths HashMap to be populated
      */
-    private void populateGamePaths(Iterator<Edge>paths, HashMap<String, HashSet<String>> gamePaths){
+    private void parseGamePaths(Iterator<Edge>paths, HashMap<String, HashSet<String>> gamePaths){
         //Iterate through all the paths
         while (paths.hasNext()) {
             Edge path = paths.next();
@@ -144,15 +140,15 @@ public class FileParser {
             Element action = (Element)actions.item(i);
 
             // Add triggers
-            this.addTriggers(gameAction, action.getElementsByTagName("triggers"));
+            this.parseActionTriggers(gameAction, action.getElementsByTagName("triggers"));
             // Add subjects
-            this.addSubjects(gameAction, action.getElementsByTagName("subjects"));
+            this.parseActionSubjects(gameAction, action.getElementsByTagName("subjects"));
             // Add consumed
-            this.addConsumed(gameAction, action.getElementsByTagName("consumed"));
+            this.parseConsumedEntities(gameAction, action.getElementsByTagName("consumed"));
             // Add produced
-            this.addProduced(gameAction, action.getElementsByTagName("produced"));
+            this.parseProducedEntities(gameAction, action.getElementsByTagName("produced"));
             //Get action narration
-            this.addNarration(gameAction, action.getElementsByTagName("narration"));
+            this.parseNarration(gameAction, action.getElementsByTagName("narration"));
             // Add game action to list of game actions
             this.addActionToGameActions(gameActions, gameAction);
         }
@@ -163,7 +159,7 @@ public class FileParser {
      * @param gameAction Newly created action
      * @param triggers Triggers from actions file
      */
-    private void addTriggers(GameAction gameAction, NodeList triggers){
+    private void parseActionTriggers(GameAction gameAction, NodeList triggers){
         if(triggers.getLength() > 0) {
             for (int j = 0; j < triggers.getLength(); j++) {
                 NodeList keyphrases = ((Element) triggers.item(j)).getElementsByTagName("keyphrase");
@@ -179,7 +175,7 @@ public class FileParser {
      * @param gameAction Newly created action
      * @param subjects Subject from actions file
      */
-    private void addSubjects(GameAction gameAction, NodeList subjects){
+    private void parseActionSubjects(GameAction gameAction, NodeList subjects){
         if(subjects.getLength() > 0) {
             for (int j = 0; j < subjects.getLength(); j++) {
                 NodeList subjectEntities = ((Element)subjects.item(j)).getElementsByTagName("entity");
@@ -195,7 +191,7 @@ public class FileParser {
      * @param gameAction Newly created action
      * @param consumed Consumed item from actions file
      */
-    private void addConsumed(GameAction gameAction, NodeList consumed){
+    private void parseConsumedEntities(GameAction gameAction, NodeList consumed){
         if(consumed.getLength() > 0) {
             for (int j = 0; j < consumed.getLength(); j++) {
                 NodeList consumedEntities = ((Element)consumed.item(j)).getElementsByTagName("entity");
@@ -211,7 +207,7 @@ public class FileParser {
      * @param gameAction Newly created action
      * @param produced Produced item from actions file
      */
-    private void addProduced(GameAction gameAction, NodeList produced){
+    private void parseProducedEntities(GameAction gameAction, NodeList produced){
         if(produced.getLength() > 0) {
             for (int j = 0; j < produced.getLength(); j++) {
                 NodeList producedEntities = ((Element)produced.item(j)).getElementsByTagName("entity");
@@ -227,14 +223,14 @@ public class FileParser {
      * @param gameAction Newly created action
      * @param narrations narration retrieved from the actions file
      */
-    private void addNarration(GameAction gameAction, NodeList narrations){
+    private void parseNarration(GameAction gameAction, NodeList narrations){
         if (narrations.getLength() > 0) {
             gameAction.setNarration(narrations.item(0).getTextContent());
         }
     }
 
     /**
-     * Adds the finalised game action to list of game action in the game
+     * Adds the finalised game action to list of game actions in the memory
      * @param gameActions Set of unique actions
      * @param gameAction Newly created action
      */

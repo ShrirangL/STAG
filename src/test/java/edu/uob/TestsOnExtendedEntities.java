@@ -1,5 +1,6 @@
 package edu.uob;
 
+import com.sun.source.tree.AssertTree;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -250,57 +251,86 @@ public class TestsOnExtendedEntities {
 
     @Test
     void testMultiplayerComplexScenario(){
-        sendCommandToServer("p1: look"); // sees nobody
-        sendCommandToServer("p2: look"); // sees p1
-        sendCommandToServer("p3: look"); // sees p1 and p2
+        sendCommandToServer("Shrirang: look"); // sees nobody
+        String response = sendCommandToServer("Nilay: look"); // sees Shrirang
+        assertTrue(response.contains("Shrirang"));
+        response = sendCommandToServer("Mahesh: look"); // sees Shrirang and Nilay
+        assertTrue(response.contains("Nilay") && response.contains("Shrirang"));
 
-        sendCommandToServer("p1: get coin");
-        sendCommandToServer("p2: get axe");
-        sendCommandToServer("p3: get potion");
+        sendCommandToServer("Shrirang: get coin");
+        sendCommandToServer("Nilay: get axe");
+        sendCommandToServer("Mahesh: get potion");
 
-        sendCommandToServer("p1: open trapdoor");// can't open without key
-        sendCommandToServer("p2: open trapdoor");// can't open without key
-        sendCommandToServer("p3: open trapdoor");// can't open without key
+        response = sendCommandToServer("Shrirang: open trapdoor");// can't open without key
+        assertTrue(response.contains("ERROR"));
+        response = sendCommandToServer("Nilay: open trapdoor");// can't open without key
+        assertTrue(response.contains("ERROR"));
+        response = sendCommandToServer("Mahesh: open trapdoor");// can't open without key
+        assertTrue(response.contains("ERROR"));
 
-        sendCommandToServer("p1: get axe");// fail cannot pick artefacts held by others
-        sendCommandToServer("p2: get potion");//fail cannot pick artefacts held by others
-        sendCommandToServer("p3: get coin");// fail cannot pick artefacts held by others
+        response = sendCommandToServer("Shrirang: get axe");// fail cannot pick artefacts held by others
+        assertTrue(response.contains("ERROR"));
+        response = sendCommandToServer("Nilay: get potion");//fail cannot pick artefacts held by others
+        assertTrue(response.contains("ERROR"));
+        response = sendCommandToServer("Mahesh: get coin");// fail cannot pick artefacts held by others
+        assertTrue(response.contains("ERROR"));
 
-        sendCommandToServer("p1: goto forest"); // sees nobody
-        sendCommandToServer("p2: goto forest"); // sees p1
-        sendCommandToServer("p3: goto forest"); // sees p1 and p2
+        response = sendCommandToServer("Shrirang: goto forest"); // sees nobody
+        assertFalse(response.contains("Nilay") || response.contains("Mahesh"));
+        response = sendCommandToServer("Nilay: goto forest"); // sees Shrirang
+        assertTrue(response.contains("Shrirang") && !response.contains("Mahesh"));
+        response = sendCommandToServer("Mahesh: goto forest"); // sees Shrirang and Nilay
+        assertTrue(response.contains("Shrirang") && response.contains("Nilay"));
 
-        sendCommandToServer("p1: get key");
-        sendCommandToServer("p1: chop tree");// doesn't have axe
-        sendCommandToServer("p3: chop tree");// fail doesn't axe
-        sendCommandToServer("p2: chop tree");// success
+        response = sendCommandToServer("Shrirang: get key");
+        assertFalse(response.contains("ERROR"));
+        response = sendCommandToServer("Shrirang: chop tree");// doesn't have axe
+        assertTrue(response.contains("ERROR"));
+        sendCommandToServer("Mahesh: chop tree");// fail doesn't axe
+        assertTrue(response.contains("ERROR"));
+        response = sendCommandToServer("Nilay: chop tree");// success
+        assertFalse(response.contains("ERROR"));
 
-        sendCommandToServer("p2: get log");
-        sendCommandToServer("p2: goes to riverbank");
-        sendCommandToServer("p2: bridge river");
-        sendCommandToServer("p2 : goto clearing");// success
-        sendCommandToServer("p2: goto forest"); // fail
+        response = sendCommandToServer("Nilay: get log");
+        assertFalse(response.contains("ERROR"));
+        response = sendCommandToServer("Nilay: goto riverbank");
+        assertFalse(response.contains("ERROR"));
+        response = sendCommandToServer("Nilay: bridge river");
+        assertFalse(response.contains("ERROR"));
+        response = sendCommandToServer("Nilay : goto clearing");// success
+        assertFalse(response.contains("ERROR"));
+        response = sendCommandToServer("Nilay: goto forest"); // fail
+        assertTrue(response.contains("ERROR"));
 
-        sendCommandToServer("p1: goto cabin");
-        sendCommandToServer("p1: open trapdoor");
-        sendCommandToServer("p1: goto cellar");
+        sendCommandToServer("Shrirang: goto cabin");
+        sendCommandToServer("Shrirang: open trapdoor");
+        sendCommandToServer("Shrirang: goto cellar");
+        response = sendCommandToServer("Shrirang: look");
+        assertTrue(response.contains("cellar") && response.contains("elf"));
 
-        sendCommandToServer("p3: goto cabin");
-        sendCommandToServer("p3: shut trapdoor");
-        sendCommandToServer("p3: goto cellar"); // fail, cannot goto cellar
+        sendCommandToServer("Mahesh: goto cabin");
+        sendCommandToServer("Mahesh: shut trapdoor");
+        response = sendCommandToServer("Mahesh: goto cellar"); // fail, cannot goto cellar
+        assertTrue(response.contains("ERROR") && !response.contains("cellar"));
 
-        sendCommandToServer("p1: pay elf");
-        sendCommandToServer("p1: get shovel");
-        sendCommandToServer("p1: attack elf"); // health is 2
-        sendCommandToServer("p1: attack elf"); // health is 1
-        sendCommandToServer("p1: attack elf"); // health is 0
-        sendCommandToServer("p3: attack elf"); //not possible
-        sendCommandToServer("p1: look"); // sees p3
+        sendCommandToServer("Shrirang: pay elf");
+        sendCommandToServer("Shrirang: get shovel");
+        sendCommandToServer("Shrirang: attack elf"); // health is 2
+        sendCommandToServer("Shrirang: attack elf"); // health is 1
+        sendCommandToServer("Shrirang: attack elf"); // health is 0
+        response = sendCommandToServer("Mahesh: attack elf"); //not possible
+        assertTrue(response.contains("ERROR"));
+        response = sendCommandToServer("Shrirang: look"); // sees Mahesh
+        assertTrue(response.contains("cabin") && response.contains("Mahesh"));
 
         // key is in cellar nobody can open trapdoor
-        sendCommandToServer("p1: open trapdoor"); // dropped key when died can't open door now
-        sendCommandToServer("p2: dig ground"); // fail, cannot dig ground without shovel
-        sendCommandToServer("p2: goto riverbank"); // success
-        sendCommandToServer("p2: bridge river");// no error
+        response = sendCommandToServer("Shrirang: open trapdoor"); // dropped key when died can't open door now
+        assertTrue(response.contains("ERROR"));
+        response = sendCommandToServer("Nilay: dig ground"); // fail, cannot dig ground without shovel
+        assertTrue(response.contains("ERROR"));
+        response = sendCommandToServer("Nilay: goto riverbank"); // success
+        assertFalse(response.contains("ERROR"));
+        response = sendCommandToServer("Nilay: bridge river");// no error
+        assertTrue(response.contains("ERROR"));
     }
 }

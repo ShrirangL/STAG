@@ -4,10 +4,10 @@ import java.util.HashSet;
 
 public class GameAction
 {
-    private HashSet<String> triggers;
-    private HashSet<String> subjects;
-    private HashSet<String> consumedItems;
-    private HashSet<String> producedItems;
+    private final HashSet<String> triggers;
+    private final HashSet<String> subjects;
+    private final HashSet<String> consumedItems;
+    private final HashSet<String> producedItems;
     private String narration;
 
     GameAction(){

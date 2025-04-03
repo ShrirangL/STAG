@@ -1,47 +1,31 @@
 package edu.uob;
 
-import com.alexmerz.graphviz.ParseException;
-import com.alexmerz.graphviz.Parser;
-import com.alexmerz.graphviz.objects.Edge;
-import com.alexmerz.graphviz.objects.Graph;
-import com.alexmerz.graphviz.objects.Node;
-import org.w3c.dom.Document;
-import org.w3c.dom.Element;
-import org.w3c.dom.NodeList;
-import org.xml.sax.SAXException;
-
-import javax.xml.parsers.DocumentBuilder;
-import javax.xml.parsers.DocumentBuilderFactory;
-import javax.xml.parsers.ParserConfigurationException;
 import java.io.*;
-import java.lang.reflect.Field;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.nio.file.Paths;
 import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import java.util.stream.Collectors;
 
 public final class GameServer {
-
     // Map of actions in the game with trigger as key and set of action as value
-    private HashMap<String, HashSet<GameAction>> gameActions;
+    HashMap<String, HashSet<GameAction>> gameActions;
 
     //Paths between location in the game. paths are one-way
-    private HashMap<String, HashSet<String>> gamePaths;
+    private final HashMap<String, HashSet<String>> gamePaths;
 
     //Map of players in the game with player name being key
-    private HashMap<String, GamePlayer> gamePlayers;
+    private final HashMap<String, GamePlayer> gamePlayers;
 
     //Map of locations with name of location as key
-    private HashMap<String, GameLocation> gameLocations;
+    private final HashMap<String, GameLocation> gameLocations;
 
     //First location in the map is constant for all new and respawned player
-    private StringBuilder playersStartLocation;
+    private final StringBuilder playersStartLocation;
 
     //Handles incoming user command and
-    private CommandHandler commandHandler;
+    private final CommandHandler commandHandler;
 
     //Parses action and entities file
     private final FileParser fileParser = FileParser.getInstance();
@@ -61,14 +45,13 @@ public final class GameServer {
     }
 
     /**
-     * Do not change the following method signature or we won't be able to mark your submission
-     * Instanciates a new server instance, specifying a game with some configuration files
+     * Do not change the following method signature, or we won't be able to mark your submission
+     * Instantiates a new server instance, specifying a game with some configuration files
      *
      * @param entitiesFile The game configuration file containing all game entities to use in your game
      * @param actionsFile The game configuration file containing all game actions to use in your game
      */
     public GameServer(File entitiesFile, File actionsFile) {
-        // TODO implement your server logic here
         gameActions = new HashMap<>();
         gamePaths = new HashMap<>();
         gamePlayers = new HashMap<>();
@@ -107,12 +90,12 @@ public final class GameServer {
             String action = iterator.next();
             for(GamePlayer player : gamePlayers.values()) {
                 if (player.getName().equalsIgnoreCase(name)) {
-                    return commandHandler.parseAction(player, action);
+                    return commandHandler.parseIncomingCommand(player, action);
                 }
             }
             gamePlayers.put(name, new GamePlayer(name, "", playersStartLocation.toString()));
             gameLocations.get(playersStartLocation.toString()).addPlayer(name);
-            return commandHandler.parseAction(gamePlayers.get(name), action);
+            return commandHandler.parseIncomingCommand(gamePlayers.get(name), action);
         }
         catch (Exception e){
             StringBuilder error = new StringBuilder();
@@ -144,7 +127,7 @@ public final class GameServer {
     }
 
     /**
-     * Do not change the following method signature or we won't be able to mark your submission
+     * Do not change the following method signature, or we won't be able to mark your submission
      * Handles an incoming connection from the socket server.
      *
      * @param serverSocket The client socket to read/write from.

@@ -1,17 +1,15 @@
 package edu.uob;
 
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
-import java.util.stream.Collectors;
 
 public class GameLocation {
     private final String locationName;
     private final String locationDescription;
-    private HashSet<GameCharacter> characters = new HashSet<>();
-    private HashSet<GameArtefact> artefacts = new HashSet<>();
-    private HashSet<GameFurniture> furnitures = new HashSet<>();
-    private HashSet<String> players = new HashSet<>();
+    private final HashSet<GameCharacter> characters = new HashSet<>();
+    private final HashSet<GameArtefact> artefacts = new HashSet<>();
+    private final HashSet<GameFurniture> furnitures = new HashSet<>();
+    private final HashSet<String> players = new HashSet<>();
 
     GameLocation(String locationName, String locationDescription) {
         this.locationName = locationName;

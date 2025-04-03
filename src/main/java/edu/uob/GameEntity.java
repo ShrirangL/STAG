@@ -6,12 +6,6 @@ public class GameEntity
     protected final String description;
     protected String location;
 
-    public GameEntity(){
-        this.location = "";
-        this.name = "";
-        this.description = "";
-    }
-
     public GameEntity(String name, String description, String location)
     {
         this.name = name;

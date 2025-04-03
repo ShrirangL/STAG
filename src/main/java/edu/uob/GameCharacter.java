@@ -1,10 +1,7 @@
 package edu.uob;
 
 public class GameCharacter extends GameEntity{
-    GameCharacter(){
-        super();
-    }
-    GameCharacter(String name, String description, String location, int health){
+    GameCharacter(String name, String description, String location){
         super(name, description, location);
     }
 }

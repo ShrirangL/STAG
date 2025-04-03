@@ -41,7 +41,7 @@ public class GamePlayer extends GameEntity {
 
     /**
      * Check if player's health has reached zero and set it to new location with full health
-     * @param location
+     * @param location name of new location after respawn
      */
     public void checkHealthAndRespawn(String location) {
         if(health < 1) {
@@ -54,7 +54,7 @@ public class GamePlayer extends GameEntity {
      * Adds an artefact to player's inventory
      * @param item GameArtefact object
      */
-    public void addItem(GameArtefact item) {
+    public void addArtefactToInventory(GameArtefact item) {
         item.setLocation(name);
         artefacts.add(item);
     }
@@ -63,11 +63,11 @@ public class GamePlayer extends GameEntity {
      * Removes an artefact from player's inventory
      * @param artefactName name of artefact
      */
-    public void removeArtefact(String artefactName) {
-        Iterator<GameArtefact> itererator = artefacts.iterator();
-        while (itererator.hasNext()) {
-            if (itererator.next().getName().equalsIgnoreCase(artefactName)) {
-                itererator.remove();
+    public void removeArtefactFromInventory(String artefactName) {
+        Iterator<GameArtefact> iterator = artefacts.iterator();
+        while (iterator.hasNext()) {
+            if (iterator.next().getName().equalsIgnoreCase(artefactName)) {
+                iterator.remove();
                 break;
             }
         }
@@ -119,7 +119,7 @@ public class GamePlayer extends GameEntity {
      * @param artefactName name of artefact
      * @return True if present else false
      */
-    public Boolean isArtefactPresent(String artefactName) {
+    public Boolean isArtefactPresentInInventory(String artefactName) {
         for (GameArtefact artefact : artefacts) {
             if (artefact.getName().equalsIgnoreCase(artefactName)) {
                 return true;
@@ -132,7 +132,7 @@ public class GamePlayer extends GameEntity {
      * Returns contents of player's inventory to user
      * @return Text describing what is present in player's inventory
      */
-    public String showInventory() {
+    public String showInventoryContents() {
         StringBuilder stringBuilder = new StringBuilder();
         stringBuilder.append(name).append(" has:").append(System.lineSeparator());
         for (GameArtefact item : artefacts) {
