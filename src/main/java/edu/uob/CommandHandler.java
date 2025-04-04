@@ -77,11 +77,11 @@ public class CommandHandler {
         input = input.trim();
         StringBuilder command = new StringBuilder(input);
         HashSet<String> triggers = new HashSet<String>();
-        compileListOfKeywordsFromCommand(command, triggers, availableTriggers);
+        this.compileListOfKeywordsFromCommand(command, triggers, availableTriggers);
         HashSet<String> subjects = new HashSet<String>();
-        compileListOfKeywordsFromCommand(command, subjects, availableSubjects);
+        this.compileListOfKeywordsFromCommand(command, subjects, availableSubjects);
         HashSet<String> players = new HashSet<String>();
-        compileListOfKeywordsFromCommand(command, players, new HashSet<String>(gamePlayers.keySet()));
+        this.compileListOfKeywordsFromCommand(command, players, new HashSet<String>(gamePlayers.keySet()));
 
         //Ensure that the command does not have names of other players
         if(this.doesSetContainWordsExcept(players, new HashSet<>(Set.of(gamePlayer.getName())))) {
@@ -92,7 +92,7 @@ public class CommandHandler {
             throw new RuntimeException("No action found");
         }
 
-        return performAction(gamePlayer, triggers, subjects);
+        return this.performAction(gamePlayer, triggers, subjects);
     }
 
     /**
@@ -520,7 +520,7 @@ public class CommandHandler {
             throw new RuntimeException("No command triggers in action ");
         }
 
-        HashSet<GameAction> validActions = compilePossibleActionsFromCommand(triggers, subjects);
+        HashSet<GameAction> validActions = this.compilePossibleActionsFromCommand(triggers, subjects);
         if (validActions.size() != 1) {
             throw new RuntimeException("Input command is ambiguous");
         }
@@ -639,7 +639,7 @@ public class CommandHandler {
             for (String item : consumed) {
                 // If health is consumed
                 if (item.equalsIgnoreCase("health")) {
-                    consumePlayerHealth(gamePlayer, gameLocation);
+                    this.consumePlayerHealth(gamePlayer, gameLocation);
                 }
                 // see if the item is present in player's inventory
                 else if (gamePlayer.isArtefactPresentInInventory(item)) {
