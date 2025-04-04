@@ -333,4 +333,19 @@ public class TestsOnExtendedEntities {
         response = sendCommandToServer("Nilay: bridge river");// no error
         assertTrue(response.contains("ERROR"));
     }
+
+    @Test
+    void testMultipleConsumedAndProduced(){
+        String response = sendCommandToServer("Shrirang: goto room");
+        assertTrue(response.contains("Apple") && response.contains("room") && response.contains("Arrow"));
+        response = sendCommandToServer("Shrirang: get bow");
+        assertFalse(response.contains("ERROR"));
+        response = sendCommandToServer("Shrirang: get arrow");
+        assertFalse(response.contains("ERROR"));
+        response = sendCommandToServer("Shrirang: shoot arrow with bow on target");
+        assertTrue(response.contains("You shot target and apple with arrow. A new path and shovel appears."));
+        response = sendCommandToServer("Shrirang: look");
+        assertTrue(!response.contains("Arrow") && !response.contains("Apple") && response.contains("room")
+        && response.contains("Board"));
+    }
 }

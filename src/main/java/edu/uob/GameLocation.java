@@ -134,8 +134,10 @@ public class GameLocation {
      */
     public HashSet<String> getCharacterNames() {
         HashSet<String> names = new HashSet<>();
-        for (GameCharacter character : characters) {
-            names.add(character.getName().toLowerCase());
+        if (!characters.isEmpty()) {
+            for (GameCharacter character : characters) {
+                names.add(character.getName().toLowerCase());
+            }
         }
         return names;
     }
@@ -146,8 +148,10 @@ public class GameLocation {
      */
     public HashSet<String> getArtefactNames() {
         HashSet<String> names = new HashSet<>();
-        for (GameArtefact artefact : artefacts) {
-            names.add(artefact.getName().toLowerCase());
+        if(!artefacts.isEmpty()) {
+            for (GameArtefact artefact : artefacts) {
+                names.add(artefact.getName().toLowerCase());
+            }
         }
         return names;
     }
@@ -158,8 +162,10 @@ public class GameLocation {
      */
     public HashSet<String> getFurnitureNames() {
         HashSet<String> names = new HashSet<>();
-        for (GameFurniture furniture : furnitures) {
-            names.add(furniture.getName().toLowerCase());
+        if(!furnitures.isEmpty()) {
+            for (GameFurniture furniture : furnitures) {
+                names.add(furniture.getName().toLowerCase());
+            }
         }
         return names;
     }
@@ -179,9 +185,11 @@ public class GameLocation {
      * @return True if present else false
      */
     public Boolean isCharacterPresent(String characterName){
-        for(GameCharacter character : characters){
-            if(character.getName().equalsIgnoreCase(characterName)){
-                return true;
+        if(!characters.isEmpty()) {
+            for (GameCharacter character : characters) {
+                if (character.getName().equalsIgnoreCase(characterName)) {
+                    return true;
+                }
             }
         }
         return false;
@@ -193,9 +201,11 @@ public class GameLocation {
      * @return True if present else false
      */
     public Boolean isArtefactPresent(String artefactName){
-        for(GameArtefact artefact : artefacts){
-            if(artefact.getName().equalsIgnoreCase(artefactName)){
-                return true;
+        if(!artefacts.isEmpty()) {
+            for (GameArtefact artefact : artefacts) {
+                if (artefact.getName().equalsIgnoreCase(artefactName)) {
+                    return true;
+                }
             }
         }
         return false;
@@ -207,9 +217,11 @@ public class GameLocation {
      * @return True if present else false
      */
     public Boolean isFurniturePresent(String characterName){
-        for(GameFurniture furniture : furnitures){
-            if(furniture.getName().equalsIgnoreCase(characterName)){
-                return true;
+        if (!furnitures.isEmpty()) {
+            for (GameFurniture furniture : furnitures) {
+                if (furniture.getName().equalsIgnoreCase(characterName)) {
+                    return true;
+                }
             }
         }
         return false;
@@ -239,9 +251,11 @@ public class GameLocation {
      * @return GameCharacter object
      */
     public GameCharacter getCharacter(String name) {
-        for (GameCharacter character : characters) {
-            if (character.getName().equalsIgnoreCase(name)) {
-                return character;
+        if(!characters.isEmpty()) {
+            for (GameCharacter character : characters) {
+                if (character.getName().equalsIgnoreCase(name)) {
+                    return character;
+                }
             }
         }
         return null;
@@ -253,9 +267,11 @@ public class GameLocation {
      * @return GameArtefact object
      */
     public GameArtefact getArtefact(String name) {
-        for (GameArtefact artefact : artefacts) {
-            if (artefact.getName().equalsIgnoreCase(name)) {
-                return artefact;
+        if(!artefacts.isEmpty()) {
+            for (GameArtefact artefact : artefacts) {
+                if (artefact.getName().equalsIgnoreCase(name)) {
+                    return artefact;
+                }
             }
         }
         return null;
@@ -267,9 +283,11 @@ public class GameLocation {
      * @return GameFurniture object
      */
     public GameFurniture getFurniture(String name) {
-        for (GameFurniture furniture : furnitures) {
-            if (furniture.getName().equalsIgnoreCase(name)) {
-                return furniture;
+        if(!furnitures.isEmpty()) {
+            for (GameFurniture furniture : furnitures) {
+                if (furniture.getName().equalsIgnoreCase(name)) {
+                    return furniture;
+                }
             }
         }
         return null;

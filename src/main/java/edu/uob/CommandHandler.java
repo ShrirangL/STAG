@@ -52,11 +52,13 @@ public class CommandHandler {
      */
     private void computeAvailableSubjects(){
         // action can be performed on artefacts, characters, furniture and location
-        for (GameLocation location : gameLocations.values()) {
-            availableSubjects.add(location.getLocationName());
-            availableSubjects.addAll(location.getArtefactNames());
-            availableSubjects.addAll(location.getCharacterNames());
-            availableSubjects.addAll(location.getFurnitureNames());
+        if(gameLocations != null && !gameLocations.isEmpty()) {
+            for (GameLocation location : gameLocations.values()) {
+                availableSubjects.add(location.getLocationName());
+                availableSubjects.addAll(location.getArtefactNames());
+                availableSubjects.addAll(location.getCharacterNames());
+                availableSubjects.addAll(location.getFurnitureNames());
+            }
         }
     }
 
@@ -128,16 +130,18 @@ public class CommandHandler {
      * @param availableKeywords List of available keywords
      */
     private void compileListOfKeywordsFromCommand(StringBuilder command, HashSet<String> foundKeywords, HashSet<String> availableKeywords) {
-        for(String keyword : availableKeywords){
-            StringBuilder patternString = new StringBuilder();
-            patternString.append("\\b").append(keyword).append("\\b");
-            Pattern pattern = Pattern.compile(patternString.toString(), Pattern.CASE_INSENSITIVE);
-            Matcher matcher = pattern.matcher(command);
+        if(availableKeywords != null && !availableKeywords.isEmpty()) {
+            for (String keyword : availableKeywords) {
+                StringBuilder patternString = new StringBuilder();
+                patternString.append("\\b").append(keyword).append("\\b");
+                Pattern pattern = Pattern.compile(patternString.toString(), Pattern.CASE_INSENSITIVE);
+                Matcher matcher = pattern.matcher(command);
 
-            while (matcher.find()) {
-                foundKeywords.add(keyword);
-                command.delete(matcher.start(), matcher.end());
-                matcher = pattern.matcher(command);
+                while (matcher.find()) {
+                    foundKeywords.add(keyword);
+                    command.delete(matcher.start(), matcher.end());
+                    matcher = pattern.matcher(command);
+                }
             }
         }
     }
@@ -149,16 +153,20 @@ public class CommandHandler {
      * @return True if word other than exceptions is found else false
      */
     private boolean doesSetContainWordsExcept(HashSet<String> words, HashSet<String> exceptions) {
-        for (String word : words) {
-            boolean found = false;
-            for (String exception : exceptions) {
-                if (word.equalsIgnoreCase(exception)) {
-                    found = true;
-                    break;
+        if(words != null && !words.isEmpty()) {
+            for (String word : words) {
+                boolean found = false;
+                if(exceptions != null && !exceptions.isEmpty()) {
+                    for (String exception : exceptions) {
+                        if (word.equalsIgnoreCase(exception)) {
+                            found = true;
+                            break;
+                        }
+                    }
                 }
-            }
-            if (!found) {
-                return true;
+                if (!found) {
+                    return true;
+                }
             }
         }
         return false;
@@ -170,9 +178,11 @@ public class CommandHandler {
      * @return True if subject is location else false
      */
     private boolean isThisSubjectLocation(String subject) {
-        for(String location : gameLocations.keySet()) {
-            if(location.equalsIgnoreCase(subject)) {
-                return true;
+        if(gameLocations != null && !gameLocations.isEmpty()) {
+            for (String location : gameLocations.keySet()) {
+                if (location.equalsIgnoreCase(subject)) {
+                    return true;
+                }
             }
         }
         return false;
@@ -185,9 +195,11 @@ public class CommandHandler {
      * @return GameLocation object corresponding to the input name
      */
     private GameLocation getGameLocation(String location) {
-        for(String locationName : gameLocations.keySet()) {
-            if(location.equalsIgnoreCase(locationName)) {
-                return gameLocations.get(locationName);
+        if(gameLocations != null && !gameLocations.isEmpty()) {
+            for (String locationName : gameLocations.keySet()) {
+                if (location.equalsIgnoreCase(locationName)) {
+                    return gameLocations.get(locationName);
+                }
             }
         }
         return null;
@@ -238,7 +250,7 @@ public class CommandHandler {
      */
     private boolean doesPathExistBetween(String originLocation, String destinationLocation) {
         GameLocation start = this.getGameLocation(originLocation);
-        if(start != null) {
+        if(start != null && gamePaths.get(start.getLocationName()) != null && !gamePaths.get(start.getLocationName()).isEmpty()) {
             for (String destination : gamePaths.get(start.getLocationName())) {
                 if (destination.equalsIgnoreCase(destinationLocation)) {
                     return true;
@@ -429,31 +441,44 @@ public class CommandHandler {
      */
     private String getPlayerPerspective(GamePlayer gamePlayer) {
         GameLocation gameLocation = gameLocations.get(gamePlayer.getLocation());
+        if(gameLocation == null) {
+            return "";
+        }
         StringBuilder stringBuilder = new StringBuilder();
         stringBuilder.append("You are in ").append(gameLocation.getLocationDescription()).append(System.lineSeparator());
         stringBuilder.append("You can see:").append(System.lineSeparator());
         //iterate through characters, artefacts, furniture
-        for (GameCharacter character : gameLocation.getCharacters()) {
-            stringBuilder.append(character.getName()).append(": ")
-                    .append(character.getDescription()).append(System.lineSeparator());
+        if(gameLocation.getCharacters() != null && !gameLocation.getCharacters().isEmpty()) {
+            for (GameCharacter character : gameLocation.getCharacters()) {
+                stringBuilder.append(character.getName()).append(": ")
+                        .append(character.getDescription()).append(System.lineSeparator());
+            }
         }
-        for (GameArtefact gameArtefact : gameLocation.getArtefacts()) {
-            stringBuilder.append(gameArtefact.getName()).append(": ")
-                    .append(gameArtefact.getDescription()).append(System.lineSeparator());
+        if(gameLocation.getArtefacts() != null && !gameLocation.getArtefacts().isEmpty()) {
+            for (GameArtefact gameArtefact : gameLocation.getArtefacts()) {
+                stringBuilder.append(gameArtefact.getName()).append(": ")
+                        .append(gameArtefact.getDescription()).append(System.lineSeparator());
+            }
         }
-        for (GameFurniture furniture : gameLocation.getFurnitures()) {
-            stringBuilder.append(furniture.getName()).append(": ")
-                    .append(furniture.getDescription()).append(System.lineSeparator());
+        if(gameLocation.getFurnitures() != null && !gameLocation.getFurnitures().isEmpty()) {
+            for (GameFurniture furniture : gameLocation.getFurnitures()) {
+                stringBuilder.append(furniture.getName()).append(": ")
+                        .append(furniture.getDescription()).append(System.lineSeparator());
+            }
         }
-        for (String player : gameLocation.getPlayers()) {
-            if(!gamePlayer.getName().equalsIgnoreCase(player)) {
-                stringBuilder.append("Player :").append(player).append(System.lineSeparator());
+        if(gameLocation.getPlayers() != null && !gameLocation.getPlayers().isEmpty()) {
+            for (String player : gameLocation.getPlayers()) {
+                if (!gamePlayer.getName().equalsIgnoreCase(player)) {
+                    stringBuilder.append("Player :").append(player).append(System.lineSeparator());
+                }
             }
         }
         stringBuilder.append("You can access from here:").append(System.lineSeparator());
         HashSet<String> gPaths = gamePaths.get(gamePlayer.getLocation());
-        for (String path : gPaths) {
-            stringBuilder.append(path).append(System.lineSeparator());
+        if(gPaths != null && !gPaths.isEmpty()) {
+            for (String path : gPaths) {
+                stringBuilder.append(path).append(System.lineSeparator());
+            }
         }
         return stringBuilder.toString();
     }
@@ -518,18 +543,21 @@ public class CommandHandler {
     private HashSet<GameAction> compilePossibleActionsFromCommand(HashSet<String> triggers, HashSet<String> subjects) {
         HashSet<GameAction> validActions = new HashSet<GameAction>();
         HashSet<GameAction> possibleActions = new HashSet<GameAction>();
-        for(String commandTrigger : triggers) {
-            possibleActions.addAll(gameActions.get(commandTrigger));
+        if(triggers != null && !triggers.isEmpty()) {
+            for (String commandTrigger : triggers) {
+                possibleActions.addAll(gameActions.get(commandTrigger));
+            }
         }
-
         //keep iterating through all the actions and when a subject from an action is found
         // there should be no other subjects from a different action
-        for (GameAction action : possibleActions) {
-            // compile a list of subjects for this action
-            for (String subject : action.getSubjects()) {
-                if (subjects.contains(subject)) {
-                    validActions.add(action);
-                    break;
+        if(!possibleActions.isEmpty()) {
+            for (GameAction action : possibleActions) {
+                // compile a list of subjects for this action
+                for (String subject : action.getSubjects()) {
+                    if (subjects.contains(subject)) {
+                        validActions.add(action);
+                        break;
+                    }
                 }
             }
         }
@@ -551,11 +579,13 @@ public class CommandHandler {
         availableEntities.addAll(gameLocation.getEntityNames()); // Entities at current location
         availableEntities.add(gamePlayer.getLocation()); // Current location
 
-        for(String subject: commandAction.getSubjects()) {
-            if(!availableEntities.stream()
-                    .map(String::toLowerCase)
-                    .collect(Collectors.toSet()).contains(subject.toLowerCase())) {
-                throw new RuntimeException("Subject(s) required to execute action are missing");
+        if(commandAction.getSubjects() != null && !commandAction.getSubjects().isEmpty()) {
+            for (String subject : commandAction.getSubjects()) {
+                if (!availableEntities.stream()
+                        .map(String::toLowerCase)
+                        .collect(Collectors.toSet()).contains(subject.toLowerCase())) {
+                    throw new RuntimeException("Subject(s) required to execute action are missing");
+                }
             }
         }
     }
@@ -569,24 +599,28 @@ public class CommandHandler {
     private void produceEntity(GameAction commandAction, GamePlayer gamePlayer, GameLocation gameLocation) {
         // produced item is moved from its current location to current location
         HashSet<String> produced = commandAction.getProduced();
-        for(String item : produced) {
-            if(item.equalsIgnoreCase("health")) {
-                gamePlayer.incrementHealth();
-            }
-            // If it is not in storeroom then the item is location
-            else if(gameLocations.keySet().stream().map(String::toLowerCase)
-                    .collect(Collectors.toSet()).contains(item.toLowerCase())
-                    && !item.equalsIgnoreCase("storeroom")) {
-                // Add new path from current to said path
-                this.createPathBetween(gameLocation.getLocationName(),item);
-            }
-            // see if produced item is entity and present anywhere in the game. If present move to player's current location.
-            else {
-                for(GameLocation location : gameLocations.values()) {
-                    if(!location.getLocationName().equalsIgnoreCase(gameLocation.getLocationName())
-                            && location.isEntityPresent(item)) {
-                        gameLocation.addEntity(location.getEntity(item));
-                        location.removeEntity(item);
+        if(produced != null && !produced.isEmpty()) {
+            for (String item : produced) {
+                if (item.equalsIgnoreCase("health")) {
+                    gamePlayer.incrementHealth();
+                }
+                // If it is not in storeroom then the item is location
+                else if (gameLocations.keySet().stream().map(String::toLowerCase)
+                        .collect(Collectors.toSet()).contains(item.toLowerCase())
+                        && !item.equalsIgnoreCase("storeroom")) {
+                    // Add new path from current to said path
+                    this.createPathBetween(gameLocation.getLocationName(), item);
+                }
+                // see if produced item is entity and present anywhere in the game. If present move to player's current location.
+                else {
+                    if(!gameLocations.isEmpty()) {
+                        for (GameLocation location : gameLocations.values()) {
+                            if (!location.getLocationName().equalsIgnoreCase(gameLocation.getLocationName())
+                                    && location.isEntityPresent(item)) {
+                                gameLocation.addEntity(location.getEntity(item));
+                                location.removeEntity(item);
+                            }
+                        }
                     }
                 }
             }
@@ -601,30 +635,34 @@ public class CommandHandler {
      */
     private void consumeEntity( GameAction commandAction, GamePlayer gamePlayer, GameLocation gameLocation) {
         HashSet<String> consumed = commandAction.getConsumed();
-        for(String item : consumed) {
-            // If health is consumed
-            if(item.equalsIgnoreCase("health")) {
-                consumePlayerHealth(gamePlayer, gameLocation);
-            }
-            // see if the item is present in player's inventory
-            else if(gamePlayer.isArtefactPresentInInventory(item)) {
-                gameLocations.get("storeroom").addArtefact(gamePlayer.getArtefact(item));
-                gamePlayer.removeArtefactFromInventory(item);
-            }
-            // else if consumed entity is a location
-            else if (gameLocations.keySet().stream().map(String::toLowerCase)
-                    .collect(Collectors.toSet()).contains(item.toLowerCase())
-                    && !item.equalsIgnoreCase("storeroom")) {
-                this.removePathBetween(gameLocation.getLocationName(),item);
-            }
-            // else if consumed item is entity in a location in map
-            else {
-                for(GameLocation location : gameLocations.values()) {
-                    if(!location.getLocationName().equalsIgnoreCase("storeroom")
-                            && location.isEntityPresent(item)){
-                        gameLocations.get("storeroom").addEntity(location.getEntity(item));
-                        location.removeEntity(item);
-                        break;
+        if(consumed != null && !consumed.isEmpty()) {
+            for (String item : consumed) {
+                // If health is consumed
+                if (item.equalsIgnoreCase("health")) {
+                    consumePlayerHealth(gamePlayer, gameLocation);
+                }
+                // see if the item is present in player's inventory
+                else if (gamePlayer.isArtefactPresentInInventory(item)) {
+                    gameLocations.get("storeroom").addArtefact(gamePlayer.getArtefact(item));
+                    gamePlayer.removeArtefactFromInventory(item);
+                }
+                // else if consumed entity is a location
+                else if (gameLocations.keySet().stream().map(String::toLowerCase)
+                        .collect(Collectors.toSet()).contains(item.toLowerCase())
+                        && !item.equalsIgnoreCase("storeroom")) {
+                    this.removePathBetween(gameLocation.getLocationName(), item);
+                }
+                // else if consumed item is entity in a location in map
+                else {
+                    if(!gameLocations.isEmpty()) {
+                        for (GameLocation location : gameLocations.values()) {
+                            if (!location.getLocationName().equalsIgnoreCase("storeroom")
+                                    && location.isEntityPresent(item)) {
+                                gameLocations.get("storeroom").addEntity(location.getEntity(item));
+                                location.removeEntity(item);
+                                break;
+                            }
+                        }
                     }
                 }
             }

@@ -86,8 +86,10 @@ public class GamePlayer extends GameEntity {
      */
     public HashSet<String> getArtefactNames() {
         HashSet<String> artefactNames = new HashSet<>();
-        for (GameArtefact artefact : artefacts) {
-            artefactNames.add(artefact.getName());
+        if(artefacts != null && !artefacts.isEmpty()) {
+            for (GameArtefact artefact : artefacts) {
+                artefactNames.add(artefact.getName());
+            }
         }
         return artefactNames;
     }
@@ -106,9 +108,11 @@ public class GamePlayer extends GameEntity {
      * @return GameArtefact object
      */
     public GameArtefact getArtefact(String artefactName) {
-        for (GameArtefact artefact : artefacts) {
-            if (artefact.getName().equalsIgnoreCase(artefactName)) {
-                return artefact;
+        if(artefacts != null && !artefacts.isEmpty()) {
+            for (GameArtefact artefact : artefacts) {
+                if (artefact.getName().equalsIgnoreCase(artefactName)) {
+                    return artefact;
+                }
             }
         }
         return null;
@@ -120,9 +124,11 @@ public class GamePlayer extends GameEntity {
      * @return True if present else false
      */
     public Boolean isArtefactPresentInInventory(String artefactName) {
-        for (GameArtefact artefact : artefacts) {
-            if (artefact.getName().equalsIgnoreCase(artefactName)) {
-                return true;
+        if(artefacts != null && !artefacts.isEmpty()) {
+            for (GameArtefact artefact : artefacts) {
+                if (artefact.getName().equalsIgnoreCase(artefactName)) {
+                    return true;
+                }
             }
         }
         return false;

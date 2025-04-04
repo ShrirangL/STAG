@@ -66,6 +66,21 @@ digraph layout {
             }
         }
 
+        subgraph cluster006 {
+            node [shape = "none"];
+            Room [description = "A wooden room besides cabin"];
+            subgraph furniture {
+                node [shape = "hexagon"];
+                Board [description = "Board for target practice"];
+            }
+            subgraph artefacts {
+                node [shape = "diamond"];
+                Bow [description = "A compound bow"];
+                Arrow [description = "A sharp arrow"];
+                Apple [description = "A red apple in front of target board"];
+            }
+        }
+
         subgraph cluster999 {
             node [shape = "none"];
             storeroom [description = "Storage for any entities not placed in the game"]
@@ -88,6 +103,7 @@ digraph layout {
     }
 
     subgraph paths {
+        cabin -> Room;
         cabin -> forest;
         forest -> cabin;
         cellar -> cabin;

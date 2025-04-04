@@ -168,4 +168,26 @@
         <narration>You tap the horn and as if by magic, lumberjack disappears !</narration>
     </action>
 
+    <action>
+        <triggers>
+            <keyphrase>shoot</keyphrase>
+            <keyphrase>fire</keyphrase>
+        </triggers>
+        <subjects>
+            <entity>bow</entity>
+            <entity>arrow</entity>
+            <entity>apple</entity>
+            <entity>board</entity>
+        </subjects>
+        <consumed>
+            <entity>apple</entity>
+            <entity>arrow</entity>
+        </consumed>
+        <produced>
+            <entity>clearing</entity>
+            <entity>shovel</entity>
+        </produced>
+        <narration>You shot target and apple with arrow. A new path and shovel appears.</narration>
+    </action>
+
 </actions>

@@ -76,21 +76,25 @@ public class FileParser {
      */
     private void parseEntitiesOfLocation(Graph location, GameLocation gameLocation, String locationName){
         // Iterate through all the entity categories inside a location
-        for (Graph entity : location.getSubgraphs()) {
-            String graphName = entity.getId().getId();
-            for (Node item : entity.getNodes(false)) {
-                String itemName = item.getId().getId();
-                String itemDescription = item.getAttribute("description");
-                switch (graphName) {
-                    case "characters":
-                        gameLocation.addCharacter(new GameCharacter(itemName, itemDescription, locationName));
-                        break;
-                    case "artefacts":
-                        gameLocation.addArtefact(new GameArtefact(itemName, itemDescription, locationName));
-                        break;
-                    case "furniture":
-                        gameLocation.addFurniture(new GameFurniture(itemName, itemDescription, locationName));
-                        break;
+        if(location.getSubgraphs() != null && !location.getSubgraphs().isEmpty()) {
+            for (Graph entity : location.getSubgraphs()) {
+                String graphName = entity.getId().getId();
+                if(entity.getNodes(false) != null && !entity.getNodes(false).isEmpty()) {
+                    for (Node item : entity.getNodes(false)) {
+                        String itemName = item.getId().getId();
+                        String itemDescription = item.getAttribute("description");
+                        switch (graphName) {
+                            case "characters":
+                                gameLocation.addCharacter(new GameCharacter(itemName, itemDescription, locationName));
+                                break;
+                            case "artefacts":
+                                gameLocation.addArtefact(new GameArtefact(itemName, itemDescription, locationName));
+                                break;
+                            case "furniture":
+                                gameLocation.addFurniture(new GameFurniture(itemName, itemDescription, locationName));
+                                break;
+                        }
+                    }
                 }
             }
         }
@@ -135,22 +139,23 @@ public class FileParser {
         Document document = builder.parse(actionsFile.getAbsolutePath());
         Element root = document.getDocumentElement();
         NodeList actions = root.getChildNodes();
-        for(int i = 1; i < actions.getLength(); i+=2) {
-            GameAction gameAction = new GameAction();
-            Element action = (Element)actions.item(i);
-
-            // Add triggers
-            this.parseActionTriggers(gameAction, action.getElementsByTagName("triggers"));
-            // Add subjects
-            this.parseActionSubjects(gameAction, action.getElementsByTagName("subjects"));
-            // Add consumed
-            this.parseConsumedEntities(gameAction, action.getElementsByTagName("consumed"));
-            // Add produced
-            this.parseProducedEntities(gameAction, action.getElementsByTagName("produced"));
-            //Get action narration
-            this.parseNarration(gameAction, action.getElementsByTagName("narration"));
-            // Add game action to list of game actions
-            this.addActionToGameActions(gameActions, gameAction);
+        if(actions.getLength() > 0) {
+            for (int i = 1; i < actions.getLength(); i += 2) {
+                GameAction gameAction = new GameAction();
+                Element action = (Element) actions.item(i);
+                // Add triggers
+                this.parseActionTriggers(gameAction, action.getElementsByTagName("triggers"));
+                // Add subjects
+                this.parseActionSubjects(gameAction, action.getElementsByTagName("subjects"));
+                // Add consumed
+                this.parseConsumedEntities(gameAction, action.getElementsByTagName("consumed"));
+                // Add produced
+                this.parseProducedEntities(gameAction, action.getElementsByTagName("produced"));
+                //Get action narration
+                this.parseNarration(gameAction, action.getElementsByTagName("narration"));
+                // Add game action to list of game actions
+                this.addActionToGameActions(gameActions, gameAction);
+            }
         }
     }
 
@@ -160,11 +165,13 @@ public class FileParser {
      * @param triggers Triggers from actions file
      */
     private void parseActionTriggers(GameAction gameAction, NodeList triggers){
-        if(triggers.getLength() > 0) {
+        if(triggers!= null && triggers.getLength() > 0) {
             for (int j = 0; j < triggers.getLength(); j++) {
                 NodeList keyphrases = ((Element) triggers.item(j)).getElementsByTagName("keyphrase");
-                for (int k = 0; k < keyphrases.getLength(); k++) {
-                    gameAction.addTrigger(keyphrases.item(k).getTextContent());
+                if(keyphrases.getLength() > 0) {
+                    for (int k = 0; k < keyphrases.getLength(); k++) {
+                        gameAction.addTrigger(keyphrases.item(k).getTextContent());
+                    }
                 }
             }
         }
@@ -176,11 +183,13 @@ public class FileParser {
      * @param subjects Subject from actions file
      */
     private void parseActionSubjects(GameAction gameAction, NodeList subjects){
-        if(subjects.getLength() > 0) {
+        if(subjects != null && subjects.getLength() > 0) {
             for (int j = 0; j < subjects.getLength(); j++) {
                 NodeList subjectEntities = ((Element)subjects.item(j)).getElementsByTagName("entity");
-                for(int k = 0; k < subjectEntities.getLength(); k++) {
-                    gameAction.addSubject(subjectEntities.item(k).getTextContent());
+                if(subjectEntities.getLength() > 0) {
+                    for (int k = 0; k < subjectEntities.getLength(); k++) {
+                        gameAction.addSubject(subjectEntities.item(k).getTextContent());
+                    }
                 }
             }
         }
@@ -192,11 +201,13 @@ public class FileParser {
      * @param consumed Consumed item from actions file
      */
     private void parseConsumedEntities(GameAction gameAction, NodeList consumed){
-        if(consumed.getLength() > 0) {
+        if(consumed != null && consumed.getLength() > 0) {
             for (int j = 0; j < consumed.getLength(); j++) {
                 NodeList consumedEntities = ((Element)consumed.item(j)).getElementsByTagName("entity");
-                for(int k = 0; k < consumedEntities.getLength(); k++) {
-                    gameAction.addConsumed(consumedEntities.item(k).getTextContent());
+                if(consumedEntities.getLength() > 0) {
+                    for (int k = 0; k < consumedEntities.getLength(); k++) {
+                        gameAction.addConsumed(consumedEntities.item(k).getTextContent());
+                    }
                 }
             }
         }
@@ -208,11 +219,13 @@ public class FileParser {
      * @param produced Produced item from actions file
      */
     private void parseProducedEntities(GameAction gameAction, NodeList produced){
-        if(produced.getLength() > 0) {
+        if(produced != null && produced.getLength() > 0) {
             for (int j = 0; j < produced.getLength(); j++) {
                 NodeList producedEntities = ((Element)produced.item(j)).getElementsByTagName("entity");
-                for(int k = 0; k < producedEntities.getLength(); k++) {
-                    gameAction.addProduced(producedEntities.item(k).getTextContent());
+                if(producedEntities.getLength() > 0) {
+                    for (int k = 0; k < producedEntities.getLength(); k++) {
+                        gameAction.addProduced(producedEntities.item(k).getTextContent());
+                    }
                 }
             }
         }
@@ -224,7 +237,7 @@ public class FileParser {
      * @param narrations narration retrieved from the actions file
      */
     private void parseNarration(GameAction gameAction, NodeList narrations){
-        if (narrations.getLength() > 0) {
+        if (narrations != null && narrations.getLength() > 0) {
             gameAction.setNarration(narrations.item(0).getTextContent());
         }
     }
@@ -235,9 +248,11 @@ public class FileParser {
      * @param gameAction Newly created action
      */
     private void addActionToGameActions(HashMap<String, HashSet<GameAction>> gameActions, GameAction gameAction){
-        for(String trigger : gameAction.getTriggers()) {
-            gameActions.putIfAbsent(trigger, new HashSet<>());
-            gameActions.get(trigger).add(gameAction);
+        if(gameAction.getTriggers() != null && !gameAction.getTriggers().isEmpty()) {
+            for (String trigger : gameAction.getTriggers()) {
+                gameActions.putIfAbsent(trigger, new HashSet<>());
+                gameActions.get(trigger).add(gameAction);
+            }
         }
     }
 }

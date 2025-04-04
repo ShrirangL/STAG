@@ -42,7 +42,7 @@ final class EntitiesFileTests {
           Node toLocation = firstPath.getTarget().getNode();
           String toName = toLocation.getId().getId();
           assertEquals("cabin", fromName, "First path should have been from 'cabin'");
-          assertEquals("forest", toName, "First path should have been to 'forest'");
+          assertEquals("Room", toName, "First path should have been to 'Room'");
 
       } catch (FileNotFoundException fnfe) {
           fail("FileNotFoundException was thrown when attempting to read basic entities file");

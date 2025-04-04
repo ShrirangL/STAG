@@ -88,9 +88,11 @@ public final class GameServer {
                 throw new RuntimeException("Name must consist only of letters, spaces, apostrophes and hyphens");
             }
             String action = iterator.next();
-            for(GamePlayer player : gamePlayers.values()) {
-                if (player.getName().equalsIgnoreCase(name)) {
-                    return commandHandler.parseIncomingCommand(player, action);
+            if(!gamePlayers.isEmpty()) {
+                for (GamePlayer player : gamePlayers.values()) {
+                    if (player.getName().equalsIgnoreCase(name)) {
+                        return commandHandler.parseIncomingCommand(player, action);
+                    }
                 }
             }
             gamePlayers.put(name, new GamePlayer(name, "", playersStartLocation.toString()));
