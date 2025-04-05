@@ -20,22 +20,6 @@
 
     <action>
         <triggers>
-            <keyphrase>close</keyphrase>
-            <keyphrase>shut</keyphrase>
-        </triggers>
-        <subjects>
-            <entity>trapdoor</entity>
-        </subjects>
-        <consumed>
-            <entity>cellar</entity>
-        </consumed>
-        <produced>
-        </produced>
-        <narration>You lock the door and can't go to cellar now</narration>
-    </action>
-
-    <action>
-        <triggers>
             <keyphrase>chop</keyphrase>
             <keyphrase>cut</keyphrase>
             <keyphrase>cut down</keyphrase>
@@ -51,6 +35,25 @@
             <entity>log</entity>
         </produced>
         <narration>You cut down the tree with the axe</narration>
+    </action>
+
+    <action>
+        <triggers>
+            <keyphrase>chop</keyphrase>
+            <keyphrase>cut</keyphrase>
+            <keyphrase>cut down</keyphrase>
+        </triggers>
+        <subjects>
+            <entity>apple</entity>
+            <entity>axe</entity>
+        </subjects>
+        <consumed>
+            <entity>apple</entity>
+        </consumed>
+        <produced>
+            <entity>food</entity>
+        </produced>
+        <narration>You cut apple with the axe to get food</narration>
     </action>
 
     <action>
@@ -165,29 +168,37 @@
         </consumed>
         <produced>
         </produced>
-        <narration>You tap the horn and as if by magic, lumberjack disappears !</narration>
+        <narration>You tap the horn and as if by magic, a lumberjack disappears !</narration>
     </action>
 
     <action>
         <triggers>
-            <keyphrase>shoot</keyphrase>
-            <keyphrase>fire</keyphrase>
+            <keyphrase>open</keyphrase>
         </triggers>
         <subjects>
-            <entity>bow</entity>
-            <entity>arrow</entity>
-            <entity>apple</entity>
-            <entity>board</entity>
+            <entity>gate</entity>
         </subjects>
         <consumed>
-            <entity>apple</entity>
-            <entity>arrow</entity>
         </consumed>
         <produced>
-            <entity>clearing</entity>
-            <entity>shovel</entity>
+            <entity>forest</entity>
         </produced>
-        <narration>You shot target and apple with arrow. A new path and shovel appears.</narration>
+        <narration>You open the gate to the forest</narration>
+    </action>
+
+    <action>
+        <triggers>
+            <keyphrase>close</keyphrase>
+        </triggers>
+        <subjects>
+            <entity>gate</entity>
+        </subjects>
+        <consumed>
+            <entity>forest</entity>
+        </consumed>
+        <produced>
+        </produced>
+        <narration>You close the gate to the forest</narration>
     </action>
 
 </actions>
