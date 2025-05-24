@@ -112,7 +112,7 @@ Or use IntelliJ’s test runner for selective execution.
 
 ## 📷 Demo
 
-> A short gameplay demo (without audio) is available [here](03%20Game%20Engine/video/adventure.mp4).
+> A short gameplay demo (without audio) is available [here](https://github.com/drslock/JAVA2024/blob/main/Weekly%20Workbooks/10%20STAG%20assignment/03%20Game%20Engine/video/adventure.mp4).
 
 ---
 
