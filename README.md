@@ -130,6 +130,6 @@ src/
 
 ## 📬 Contact
 
-Feel free to explore the code and fork the repository. If you have questions, reach out via [GitHub Issues](https://github.com/ShrirangL/STAG/issues) or connect with me on [LinkedIn]([https://www.linkedin.com](https://www.linkedin.com/in/shrirang-lokhande-b402bb15b/)).
+Feel free to explore the code and fork the repository. If you have questions, reach out via [GitHub Issues](https://github.com/ShrirangL/STAG/issues) or connect with me on [LinkedIn](https://www.linkedin.com/in/shrirang-lokhande-b402bb15b/).
 
 ---
