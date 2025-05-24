@@ -9,8 +9,6 @@ This repository contains a fully working game engine that:
 - Operates as a networked server allowing multiplayer sessions.
 - Fully adheres to academic constraints, including **no lambdas, arrays, ArrayLists, ternary operators, string concatenation, or unqualified method calls**.
 
-> 🔒 **All code in this repository is written solely by me, without AI assistance or collaboration, and follows all academic integrity guidelines.**
-
 ---
 
 ## 🚀 Features
